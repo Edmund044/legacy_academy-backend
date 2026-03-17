@@ -35,8 +35,9 @@ async def list_players(
     pg: Pagination = Depends(),
     status: str | None = None,
     group_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+    # ,
+    # _=Depends(get_current_active_user),
 ):
     q = select(Player)
     if status:
@@ -49,7 +50,9 @@ async def list_players(
 
 
 @router.post("", status_code=201, summary="Register a player")
-async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db)
+                        # , _=Depends(AdminOrCoach)
+                        ):
     p = Player(**body.model_dump())
     db.add(p)
     await db.flush()
@@ -58,12 +61,16 @@ async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db), 
 
 
 @router.get("/{player_id}", summary="Get player profile")
-async def get_player(player_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+async def get_player(player_id: UUID, db: AsyncSession = Depends(get_db)
+                    #  , _=Depends(get_current_active_user)
+                     ):
     return ok(_player_dict(await _get(player_id, db)))
 
 
 @router.patch("/{player_id}", summary="Update player")
-async def update_player(player_id: UUID, body: PlayerUpdate, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def update_player(player_id: UUID, body: PlayerUpdate, db: AsyncSession = Depends(get_db)
+                        # , _=Depends(AdminOrCoach)
+                        ):
     p = await _get(player_id, db)
     for f, v in body.model_dump(exclude_none=True).items():
         setattr(p, f, v)

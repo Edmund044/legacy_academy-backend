@@ -190,8 +190,8 @@ class SessionCreate(BaseModel):
     coach_id: UUID
     venue_id: Optional[UUID] = None
     session_date: date
-    start_time: str   # "HH:MM"
-    end_time: str
+    start_time: time   # "HH:MM"
+    end_time: time
     enrollment_cap: int = Field(ge=1, le=200, default=30)
 
 

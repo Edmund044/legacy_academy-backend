@@ -18,8 +18,9 @@ async def list_inventory(
     pg: Pagination = Depends(),
     category: str | None = None,
     campus_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+    # ,
+    # _=Depends(get_current_active_user),
 ):
     q = select(EquipmentItem)
     if category:
@@ -38,17 +39,20 @@ async def list_inventory(
 
 
 @router.post("/inventory", status_code=201, summary="Add equipment item")
-async def create_equipment(body: EquipCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOnly)):
+async def create_equipment(body: EquipCreate, db: AsyncSession = Depends(get_db)
+                        #    , _=Depends(AdminOnly)
+                           ):
     e = EquipmentItem(**body.model_dump())
     db.add(e)
     await db.flush()
-    return ok({"id": str(e.id), "name": e.name, "category": e.category.value})
+    return ok({"id": str(e.id), "name": e.name, "stock_total": e.stock_total, "condition": e.condition})
 
 
 @router.patch("/inventory/{item_id}", summary="Update equipment item")
 async def update_equipment(
     item_id: UUID, body: EquipUpdate,
-    db: AsyncSession = Depends(get_db), _=Depends(AdminOnly),
+    db: AsyncSession = Depends(get_db)
+    # , _=Depends(AdminOnly),
 ):
     e = (await db.execute(select(EquipmentItem).where(EquipmentItem.id == item_id))).scalar_one_or_none()
     if not e:
@@ -60,7 +64,9 @@ async def update_equipment(
 
 
 @router.delete("/inventory/{item_id}", status_code=204, summary="Delete equipment item")
-async def delete_equipment(item_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(AdminOnly)):
+async def delete_equipment(item_id: UUID, db: AsyncSession = Depends(get_db)
+                        #    , _=Depends(AdminOnly)
+                           ):
     e = (await db.execute(select(EquipmentItem).where(EquipmentItem.id == item_id))).scalar_one_or_none()
     if not e:
         raise HTTPException(404, {"code": "NOT_FOUND", "message": "Equipment item not found"})
@@ -72,8 +78,9 @@ async def list_handovers(
     pg: Pagination = Depends(),
     coach_id: UUID | None = None,
     status: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+    # ,
+    # _=Depends(get_current_active_user),
 ):
     q = select(EquipmentHandover)
     if coach_id:
@@ -93,7 +100,9 @@ async def list_handovers(
 
 
 @router.post("/handovers", status_code=201, summary="Create equipment handover (check-out)")
-async def create_handover(body: HandoverCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def create_handover(body: HandoverCreate, db: AsyncSession = Depends(get_db)
+                        #   , _=Depends(AdminOrCoach)
+                          ):
     handover = EquipmentHandover(coach_id=body.coach_id, session_id=body.session_id)
     db.add(handover)
     await db.flush()
@@ -120,7 +129,8 @@ async def create_handover(body: HandoverCreate, db: AsyncSession = Depends(get_d
 @router.post("/handovers/{handover_id}/return", summary="Return equipment (check-in)")
 async def return_handover(
     handover_id: UUID, body: HandoverReturnIn,
-    db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach),
+    db: AsyncSession = Depends(get_db)
+    # , _=Depends(AdminOrCoach),
 ):
     h = (await db.execute(select(EquipmentHandover).where(EquipmentHandover.id == handover_id))).scalar_one_or_none()
     if not h:

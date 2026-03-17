@@ -39,8 +39,9 @@ async def list_sessions(
     status: str | None = None,
     from_: str = Query(None, alias="from"),
     to: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+    # ,
+    # _=Depends(get_current_active_user),
 ):
     q = select(Session)
     if coach_id:
@@ -57,7 +58,9 @@ async def list_sessions(
 
 
 @router.post("", status_code=201, summary="Create a session")
-async def create_session(body: SessionCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def create_session(body: SessionCreate, db: AsyncSession = Depends(get_db)
+                        #  , _=Depends(AdminOrCoach)
+                         ):
     s = Session(**body.model_dump())
     db.add(s)
     await db.flush()
@@ -66,14 +69,17 @@ async def create_session(body: SessionCreate, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/{session_id}", summary="Get session details")
-async def get_session(session_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+async def get_session(session_id: UUID, db: AsyncSession = Depends(get_db)
+                    #   , _=Depends(get_current_active_user)
+                      ):
     return ok(_s_dict(await _get(session_id, db)))
 
 
 @router.patch("/{session_id}", summary="Update session")
 async def update_session(
     session_id: UUID, body: SessionUpdate,
-    db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach),
+    db: AsyncSession = Depends(get_db)
+    # , _=Depends(AdminOrCoach),
 ):
     s = await _get(session_id, db)
     for f, v in body.model_dump(exclude_none=True).items():
@@ -83,7 +89,9 @@ async def update_session(
 
 
 @router.delete("/{session_id}", status_code=204, summary="Cancel / delete session")
-async def delete_session(session_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def delete_session(session_id: UUID, db: AsyncSession = Depends(get_db)
+                        #  , _=Depends(AdminOrCoach)
+                         ):
     s = await _get(session_id, db)
     s.status = "cancelled"
     await db.flush()
@@ -92,7 +100,8 @@ async def delete_session(session_id: UUID, db: AsyncSession = Depends(get_db), _
 @router.post("/{session_id}/enroll", status_code=201, summary="Enroll player in session")
 async def enroll_player(
     session_id: UUID, body: EnrollIn,
-    db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+    # , _=Depends(get_current_active_user),
 ):
     s = await _get(session_id, db)
     existing = (await db.execute(
@@ -123,7 +132,9 @@ async def enroll_player(
 
 
 @router.get("/{session_id}/roster", summary="Session enrollment roster")
-async def roster(session_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+async def roster(session_id: UUID, db: AsyncSession = Depends(get_db)
+                #  , _=Depends(get_current_active_user)
+                 ):
     await _get(session_id, db)
     rows = (await db.execute(
         select(SessionEnrollment).where(SessionEnrollment.session_id == session_id)
@@ -138,7 +149,8 @@ async def roster(session_id: UUID, db: AsyncSession = Depends(get_db), _=Depends
 @router.post("/{session_id}/checkin", summary="Pitch-side player check-in")
 async def checkin(
     session_id: UUID, body: CheckInIn,
-    db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach),
+    db: AsyncSession = Depends(get_db)
+    # , _=Depends(AdminOrCoach),
 ):
     await _get(session_id, db)
     q = select(SessionEnrollment).where(SessionEnrollment.session_id == session_id)
@@ -154,7 +166,9 @@ async def checkin(
 
 
 @router.get("/{session_id}/revenue", summary="Session 60/40 revenue split")
-async def session_revenue(session_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def session_revenue(session_id: UUID, db: AsyncSession = Depends(get_db)
+                        #   , _=Depends(AdminOrCoach)
+                          ):
     s = await _get(session_id, db)
     await db.refresh(s, ["revenue_split"])
     if s.revenue_split:

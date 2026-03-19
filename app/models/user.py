@@ -31,7 +31,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
-    coach_profile = relationship("Coach", back_populates="user", uselist=False)
+    # coach_profile = relationship("Coach", back_populates="user", uselist=False)
     guardian_profiles = relationship("Guardian", back_populates="user")
     orders = relationship("Order", back_populates="customer")
     payments = relationship("Payment", back_populates="payer")

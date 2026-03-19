@@ -36,12 +36,12 @@ async def list_coaches(
     rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
     data = []
     for c in rows:
-        await db.refresh(c, ["user"])
+        # await db.refresh(c, ["user"])
         data.append({
             "id": str(c.id), "license": c.license, "experience_years": c.experience_years,
             "rating": float(c.rating) if c.rating else None, "speciality": c.speciality,
-            "user": {"id": str(c.user.id), "email": c.user.email,
-                     "first_name": c.user.first_name, "last_name": c.user.last_name},
+            # "user": {"id": str(c.user.id), "email": c.user.email,
+            #          "first_name": c.user.first_name, "last_name": c.user.last_name},
         })
     return paginated(data, total, pg.page, pg.per_page)
 

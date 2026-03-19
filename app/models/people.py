@@ -28,7 +28,6 @@ class Campus(Base):
 class Coach(Base):
     __tablename__ = "coaches"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     campus_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("campuses.id"))
     license: Mapped[str] = mapped_column(String(100), nullable=False)
     bio: Mapped[str | None] = mapped_column(Text)
@@ -37,7 +36,7 @@ class Coach(Base):
     speciality: Mapped[str | None] = mapped_column(String(150))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    user = relationship("User", back_populates="coach_profile")
+    # user = relationship("User", back_populates="coach_profile")
     campus = relationship("Campus", back_populates="coaches")
     assigned_groups = relationship("AcademyGroup", back_populates="coach")
     sessions = relationship("Session", back_populates="coach")

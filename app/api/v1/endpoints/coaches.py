@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import json
 from app.core.deps import get_db, get_current_active_user, AdminOnly, AdminOrCoach, Pagination
 from app.core.responses import ok, paginated
 from app.models.people import Coach
@@ -50,11 +50,11 @@ async def list_coaches(
 async def create_coach(body: CoachCreate, db: AsyncSession = Depends(get_db)
                     #    , _=Depends(AdminOnly)
                        ):
-    coach = Coach(**body.model_dump())
+    coach = Coach(**body.model_dump(exclude={"primary_assigned_teams"}), primary_assigned_teams=json.dumps(body.primary_assigned_teams) if body.primary_assigned_teams else None)
     db.add(coach)
     await db.flush()
-    await db.refresh(coach, ["user"])
-    return ok({"id": str(coach.id), "license": coach.license, "user_id": str(coach.user_id)})
+    # await db.refresh(coach, ["user"])
+    return ok({"id": str(coach.id), "license": coach.license, "experience_years": coach.experience_years, "rating": float(coach.rating) if coach.rating else None,})
 
 
 @router.get("/{coach_id}", summary="Get coach profile")

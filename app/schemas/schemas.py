@@ -109,12 +109,13 @@ class UserSummary(Orm):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class CoachCreate(BaseModel):
-    user_id: UUID
+    full_name: str
     license: str = Field(min_length=2, max_length=100)
     bio: Optional[str] = None
+    primary_assigned_teams: Optional[List[str]] = None
+    career_win_rate: Optional[int] = Field(default=None, ge=0)
     experience_years: int = Field(ge=0, le=60, default=0)
     speciality: Optional[str] = None
-    campus_id: Optional[UUID] = None
 
 
 class CoachUpdate(BaseModel):
@@ -142,10 +143,22 @@ class CoachOut(Orm):
 class PlayerCreate(BaseModel):
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
+    training_center: Optional[str] = None
+    group: Optional[str] = None
+    height: Optional[float] = Field(default=None, gt=0, lt=300)
+    weight: Optional[float] = Field(default=None, gt=0, lt=300)
+    top_speed: Optional[float] = Field(default=None, gt=0, lt=60)
+    bmi: Optional[float] = Field(default=None, gt=0, lt=100)
+    goals: Optional[int] = None
+    assists: Optional[int] = None
+    pass_accuracy: Optional[float] = Field(default=None, ge=0, le=100)
+    sponsored: int = False
+    guardian: Optional[str] = None
     dob: date
     position: Optional[str] = None
     group_id: Optional[UUID] = None
     campus_id: Optional[UUID] = None
+
 
 
 class PlayerUpdate(BaseModel):
@@ -196,10 +209,14 @@ class SessionCreate(BaseModel):
 
 
 class SessionUpdate(BaseModel):
-    name: Optional[str] = None
-    enrollment_cap: Optional[int] = Field(default=None, ge=1, le=200)
-    status: Optional[str] = None
+    name: str = Field(min_length=1, max_length=200)
+    type: str
+    coach_id: UUID
     venue_id: Optional[UUID] = None
+    session_date: date
+    start_time: time   # "HH:MM"
+    end_time: time
+    enrollment_cap: int = Field(ge=1, le=200, default=30)
 
 
 class SessionOut(Orm):
@@ -323,8 +340,13 @@ class EquipCreate(BaseModel):
 
 
 class EquipUpdate(BaseModel):
-    condition: Optional[str] = None
-    stock_total: Optional[int] = Field(default=None, ge=0)
+    name: str = Field(min_length=1, max_length=200)
+    category: str
+    sku: Optional[str] = None
+    stock_total: int = Field(ge=0, default=0)
+    condition: str
+    replacement_cost_usd: Optional[float] = None
+    campus_id: Optional[UUID] = None
 
 
 class EquipOut(Orm):

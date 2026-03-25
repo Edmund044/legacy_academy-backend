@@ -60,7 +60,7 @@ async def update_equipment(
     for f, v in body.model_dump(exclude_none=True).items():
         setattr(e, f, v)
     await db.flush()
-    return ok({"id": str(e.id), "condition": e.condition.value})
+    return ok({"id": str(e.id), "condition": e.condition, "stock_total": e.stock_total, "stock_assigned": e.stock_assigned})
 
 
 @router.delete("/inventory/{item_id}", status_code=204, summary="Delete equipment item")

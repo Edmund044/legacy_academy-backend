@@ -239,8 +239,8 @@ class EnrollIn(BaseModel):
 
 
 class CheckInIn(BaseModel):
-    player_id: Optional[UUID] = None
-    qr_code: Optional[str] = None
+    player_id: UUID = None
+    status: str = None
 
 
 class DrillCreate(BaseModel):

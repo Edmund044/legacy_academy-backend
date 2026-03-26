@@ -159,9 +159,9 @@ async def checkin(
     enrollment = (await db.execute(q)).scalar_one_or_none()
     if not enrollment:
         raise HTTPException(404, {"code": "NOT_ENROLLED", "message": "Player not enrolled in this session"})
-    enrollment.status = EnrollStatus.attended
+    enrollment.status = body.status
     await db.flush()
-    return ok({"player_id": str(enrollment.player_id), "status": "attended",
+    return ok({"player_id": str(enrollment.player_id), "status": body.status,
                "billing_triggered": enrollment.billing_method.value == "pay_as_you_go"})
 
 

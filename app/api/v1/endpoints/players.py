@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from app.core.deps import get_db, get_current_active_user, AdminOrCoach, Pagination
 from app.core.responses import ok, paginated
 from app.models.people import Player
@@ -26,6 +26,21 @@ def _player_dict(p: Player) -> dict:
         "dob": p.dob.isoformat(), "position": p.position, "status": p.status.value,
         "group_id": str(p.group_id) if p.group_id else None,
         "campus_id": str(p.campus_id) if p.campus_id else None,
+        "group_name": p.group if p.group else None,
+        "guardian": p.guardian if p.guardian else None,
+        "sponsored": p.sponsored,
+        "training_center": p.training_center if p.training_center else None,
+        "stats": {
+                "goals": p.goals if p.goals else None,
+                "assists": p.assists if p.assists else None,
+                "pass_accuracy": float(p.pass_accuracy) if p.pass_accuracy and p.pass_accuracy else None,
+
+        },
+        "physical": {
+            "height": float(p.height) if p.height else None,
+            "weight": float(p.weight) if p.weight else None,
+            "bmi": float(p.bmi) if p.bmi else None,
+        },
         "created_at": p.created_at.isoformat(),
     }
 
@@ -39,7 +54,8 @@ async def list_players(
     # ,
     # _=Depends(get_current_active_user),
 ):
-    q = select(Player)
+    q = select(Player).options(
+    selectinload(Player.group))
     if status:
         q = q.where(Player.status == status)
     if group_id:

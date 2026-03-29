@@ -40,8 +40,17 @@ async def list_coaches(
         data.append({
             "id": str(c.id), "license": c.license, "experience_years": c.experience_years,
             "rating": float(c.rating) if c.rating else None, "speciality": c.speciality,
-            # "user": {"id": str(c.user.id), "email": c.user.email,
-            #          "first_name": c.user.first_name, "last_name": c.user.last_name},
+            "name": c.full_name,
+            "campus_id": str(c.campus_id) if c.campus_id else None,
+            "bio": c.bio,
+            "role": c.speciality,
+            "stats": {
+                "experience": c.experience_years,
+                "teams": len(c.primary_assigned_teams.split(",")) if c.primary_assigned_teams else 0,
+                "win_rate": float(c.career_win_rate) if c.career_win_rate else None,
+            },
+            "teams": c.primary_assigned_teams.split(",") if c.primary_assigned_teams else [],
+            "skills": c.speciality.split(",") if c.speciality else [],
         })
     return paginated(data, total, pg.page, pg.per_page)
 

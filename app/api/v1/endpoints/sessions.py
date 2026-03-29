@@ -4,7 +4,7 @@ from datetime import date as dt_date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from app.core.deps import get_db, get_current_active_user, AdminOrCoach, Pagination
 from app.core.responses import ok, paginated
 from app.models.session import Session, SessionEnrollment, EnrollStatus
@@ -29,6 +29,9 @@ def _s_dict(s: Session) -> dict:
         "status": s.status.value, "coach_id": str(s.coach_id),
         "venue_id": str(s.venue_id) if s.venue_id else None,
         "created_at": s.created_at.isoformat(),
+        "coach": s.coach.full_name if s.coach else None,
+        "enrollments": s.enrollments if s.enrollments else [],
+        "handovers": s.handovers if s.handovers else [],
     }
 
 
@@ -36,6 +39,7 @@ def _s_dict(s: Session) -> dict:
 async def list_sessions(
     pg: Pagination = Depends(),
     coach_id: UUID | None = None,
+    session_id: UUID | None = None,
     status: str | None = None,
     from_: str = Query(None, alias="from"),
     to: str | None = None,
@@ -43,9 +47,15 @@ async def list_sessions(
     # ,
     # _=Depends(get_current_active_user),
 ):
-    q = select(Session)
+    q = select(Session).options(
+    selectinload(Session.coach),
+    selectinload(Session.enrollments),
+    selectinload(Session.handovers)
+)
     if coach_id:
         q = q.where(Session.coach_id == coach_id)
+    if session_id:
+        q = q.where(Session.session_id == session_id)
     if status:
         q = q.where(Session.status == status)
     if from_:
@@ -64,7 +74,7 @@ async def create_session(body: SessionCreate, db: AsyncSession = Depends(get_db)
     s = Session(**body.model_dump())
     db.add(s)
     await db.flush()
-    await db.refresh(s)
+    await db.refresh(s, attribute_names=["coach"])
     return ok(_s_dict(s))
 
 

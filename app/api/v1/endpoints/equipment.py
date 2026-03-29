@@ -18,6 +18,7 @@ async def list_inventory(
     pg: Pagination = Depends(),
     category: str | None = None,
     campus_id: UUID | None = None,
+    session_id: UUID | None = None,
     db: AsyncSession = Depends(get_db)
     # ,
     # _=Depends(get_current_active_user),

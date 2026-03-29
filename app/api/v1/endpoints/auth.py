@@ -73,7 +73,7 @@ async def refresh(body: RefreshIn, db: AsyncSession = Depends(get_db)):
         raise HTTPException(401, {"code": "TOKEN_INVALID", "message": "User not found"})
 
     role = _role_str(user)
-    return ok({"access_token": create_access_token(user.id, role=role), "expires_in": 86400})
+    return ok({"access_token": create_access_token(user.id, role=role),"refresh_token": create_refresh_token(user.id, role=role), "expires_in": 86400})
 
 
 @router.post("/logout", summary="End session")

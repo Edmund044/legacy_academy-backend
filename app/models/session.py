@@ -55,7 +55,7 @@ class Session(Base):
     plan = relationship("SessionPlan", back_populates="session", uselist=False)
     staff = relationship("SessionStaff", back_populates="session")
     handovers = relationship("EquipmentHandover", back_populates="session")
-    handover_items = relationship("EquipmentHandoverItem", back_populates="session")
+    # handover_items = relationship("EquipmentHandoverItem", back_populates="session")
     revenue_split = relationship("RevenueSplit", back_populates="session", uselist=False)
 
 

@@ -10,9 +10,14 @@ class UserRole(str, enum.Enum):
     admin = "admin"
     coach = "coach"
     parent = "parent"
-    case_manager = "case_manager"
-    contract_manager = "contract_manager"
-    regional_admin = "regional_admin"
+    technical_director = "technical_director"
+    customer_care = "customer_care"
+    business_development = "business_development"
+    csr_lead = "csr_lead"
+    kit_and_equipment_manager = "kit_and_equipment_manager"
+    operations_manager = "operations_manager"
+    physiotherapist =  "physiotherapist"
+    player = "player"
 
 
 class User(Base):

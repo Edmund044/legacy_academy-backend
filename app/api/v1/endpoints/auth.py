@@ -30,7 +30,7 @@ async def login(body: LoginIn, db: AsyncSession = Depends(get_db)):
         raise HTTPException(401, {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
 
     if not verify_password(body.password, user.password_hash):
-        raise HTTPException(401, {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
+        raise HTTPException(401, {"code": "INVALID_CREDENTIALS verify", "message": "Invalid email or password"})
 
     if not user.is_active:
         raise HTTPException(403, {"code": "ACCOUNT_INACTIVE", "message": "Account deactivated"})

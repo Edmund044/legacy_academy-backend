@@ -206,6 +206,8 @@ class SessionCreate(BaseModel):
     start_time: time   # "HH:MM"
     end_time: time
     enrollment_cap: int = Field(ge=1, le=200, default=30)
+    equipment_needed: Optional[List[str]] = None
+    drills: Optional[List[str]] = None  # [{"drill_id": UUID, "order": int}]
 
 
 class SessionUpdate(BaseModel):

@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.core.deps import get_db, get_current_active_user, AdminOrCoach, Pagination
+from app.core.deps import get_db, Pagination
 from app.core.responses import ok, paginated
 from app.models.session import Session, SessionEnrollment, EnrollStatus
 from app.schemas.schemas import SessionCreate, SessionUpdate, EnrollIn, CheckInIn
+import json
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
@@ -55,7 +56,7 @@ async def list_sessions(
     if coach_id:
         q = q.where(Session.coach_id == coach_id)
     if session_id:
-        q = q.where(Session.session_id == session_id)
+        q = q.where(Session.id == session_id)
     if status:
         q = q.where(Session.status == status)
     if from_:
@@ -71,10 +72,13 @@ async def list_sessions(
 async def create_session(body: SessionCreate, db: AsyncSession = Depends(get_db)
                         #  , _=Depends(AdminOrCoach)
                          ):
-    s = Session(**body.model_dump())
+    s = Session(**body.model_dump(exclude={"equipment_needed","drills"}),
+                 equipment_needed=json.dumps(body.equipment_needed) if body.equipment_needed else None,
+                 drills = json.dumps(body.drills) if body.drills else None
+                 )
     db.add(s)
     await db.flush()
-    await db.refresh(s, attribute_names=["coach"])
+    await db.refresh(s, attribute_names=["coach","enrollments","handovers"])
     return ok(_s_dict(s))
 
 
@@ -147,12 +151,13 @@ async def roster(session_id: UUID, db: AsyncSession = Depends(get_db)
                  ):
     await _get(session_id, db)
     rows = (await db.execute(
-        select(SessionEnrollment).where(SessionEnrollment.session_id == session_id)
+        select(SessionEnrollment).options(selectinload(SessionEnrollment.player)).where(SessionEnrollment.session_id == session_id)
     )).scalars().all()
     return ok([{
         "enrollment_id": str(e.id), "player_id": str(e.player_id),
-        "billing_method": e.billing_method.value, "status": e.status.value,
-        "enrolled_at": e.enrolled_at.isoformat(),
+        "name": e.player.full_name if e.player else None,
+        "position": e.player.position if e.player else None, 
+        "status": e.status.value,
     } for e in rows])
 
 

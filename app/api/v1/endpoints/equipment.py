@@ -78,6 +78,7 @@ async def delete_equipment(item_id: UUID, db: AsyncSession = Depends(get_db)
 async def list_handovers(
     pg: Pagination = Depends(),
     coach_id: UUID | None = None,
+    session_id: UUID | None = None,
     status: str | None = None,
     db: AsyncSession = Depends(get_db)
     # ,
@@ -86,6 +87,8 @@ async def list_handovers(
     q = select(EquipmentHandover)
     if coach_id:
         q = q.where(EquipmentHandover.coach_id == coach_id)
+    if session_id:
+        q = q.where(EquipmentHandover.session_id == session_id)    
     if status:
         q = q.where(EquipmentHandover.status == status)
     total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()

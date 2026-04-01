@@ -33,6 +33,8 @@ def _s_dict(s: Session) -> dict:
         "coach": s.coach.full_name if s.coach else None,
         "enrollments": s.enrollments if s.enrollments else [],
         "handovers": s.handovers if s.handovers else [],
+        "equipment_needed": s.equipment_needed.split(",") if s.equipment_needed else [],
+        # "equipments_needed": json.loads(s.equipment_needed) if s.equipment_needed else None,
     }
 
 

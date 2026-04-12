@@ -17,6 +17,10 @@ from app.api.v1.endpoints.partnerships import router as partnerships_router
 from app.api.v1.endpoints.tournaments import router as tournaments_router
 from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.session_plans import router as session_plans_router
+from app.api.v1.endpoints.loans import router as loans_router
+from app.api.v1.endpoints.transactions import router as transactions_router
+from app.api.v1.endpoints.services import router as services_router
+from app.api.v1.endpoints.accounts import router as accounts_router
 
 api_router = APIRouter()
 
@@ -33,3 +37,12 @@ api_router.include_router(social_router)
 api_router.include_router(partnerships_router)
 api_router.include_router(tournaments_router)
 api_router.include_router(analytics_router)
+api_router.include_router(loans_router)
+api_router.include_router(transactions_router)
+api_router.include_router(services_router)
+api_router.include_router(accounts_router)
+# api_router.include_router(parents.router)
+# api_router.include_router(children.router)
+# api_router.include_router(services.router)
+# api_router.include_router(orders.router)
+# api_router.include_router(payments.router)

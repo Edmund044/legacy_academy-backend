@@ -23,7 +23,8 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres.nlzyqywkjwcilqymbmzz:uOf4oWp3g0SqlqaG@aws-1-eu-north-1.pooler.supabase.com:5432/postgres
+      #DATABASE_URL: postgresql+asyncpg://postgres.nlzyqywkjwcilqymbmzz:uOf4oWp3g0SqlqaG@aws-1-eu-north-1.pooler.supabase.com:5432/postgres
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/academypro
     ports:
       - "8000:8000"
     depends_on:

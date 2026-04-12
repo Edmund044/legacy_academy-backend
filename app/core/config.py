@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/academypro"
 
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://legacy-academy-git-module-1-edmund044s-projects.vercel.app"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000","http://localhost:8000", "https://legacy-academy-git-module-1-edmund044s-projects.vercel.app"]
     ALLOWED_HOSTS: List[str] = ["api.academypro.io", "localhost"]
 
     MPESA_CONSUMER_KEY: str = ""

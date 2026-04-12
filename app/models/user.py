@@ -26,7 +26,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False, index=True)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="userrole"), nullable=False, index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(30))
@@ -37,6 +37,7 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     # coach_profile = relationship("Coach", back_populates="user", uselist=False)
+    accounts = relationship("Account", back_populates="user")
     guardian_profiles = relationship("Guardian", back_populates="user")
     orders = relationship("Order", back_populates="customer")
     payments = relationship("Payment", back_populates="payer")

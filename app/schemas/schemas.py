@@ -4,7 +4,7 @@ All Pydantic v2 request/response schemas for AcademyPro API.
 from datetime import datetime, date, time
 from typing import List, Optional
 from uuid import UUID
-
+from app.models.banking import TransactionCategory, TransactionType, LoanStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
@@ -644,3 +644,115 @@ class AuditOut(Orm):
     event_type: str
     description: str
     created_at: datetime
+
+
+
+# ── Transactions ──────────────────────────────────────────────────────────────
+
+class TopUpRequest(BaseModel):
+    account_id: str
+    amount: float = Field(..., gt=0)
+    description: Optional[str] = "Top up"
+
+
+class WithdrawalRequest(BaseModel):
+    account_id: str
+    amount: float = Field(..., gt=0)
+    description: Optional[str] = "Withdrawal"
+
+
+class TransferRequest(BaseModel):
+    from_account_id: str
+    to_account_number: str
+    amount: float = Field(..., gt=0)
+    description: Optional[str] = "Transfer"
+
+
+class TransactionOut(BaseModel):
+    id: str
+    reference: str
+    transaction_type: TransactionType
+    category: TransactionCategory
+    amount: float
+    fee: float
+    balance_before: float
+    balance_after: float
+    description: Optional[str]
+    status: str
+    from_account_id: Optional[str]
+    to_account_id: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Loans ─────────────────────────────────────────────────────────────────────
+
+class LoanApplication(BaseModel):
+    account_id: str
+    principal: float = Field(..., gt=1000)
+    duration_months: int = Field(..., ge=1, le=60)
+    purpose: Optional[str] = None
+
+
+class LoanApproval(BaseModel):
+    interest_rate: float = Field(..., gt=0, le=100)  # annual %
+
+
+class LoanRepayment(BaseModel):
+    loan_id: str
+    account_id: str
+    amount: float = Field(..., gt=0)
+
+
+class LoanOut(BaseModel):
+    id: str
+    account_id: str
+    principal: float
+    interest_rate: float
+    duration_months: int
+    monthly_payment: float
+    total_repayable: float
+    amount_repaid: float
+    outstanding_balance: float
+    status: LoanStatus
+    purpose: Optional[str]
+    disbursed_at: Optional[datetime]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Statement ─────────────────────────────────────────────────────────────────
+
+class StatementFilter(BaseModel):
+    account_id: str
+    limit: int = Field(50, ge=1, le=200)
+    offset: int = Field(0, ge=0)
+    category: Optional[TransactionCategory] = None
+
+
+
+# transactions
+class ParentCreate(BaseModel):
+    first_name: str
+    last_name: str
+
+class ChildCreate(BaseModel):
+    parent_id: UUID
+    first_name: str
+
+class ServiceCreate(BaseModel):
+    name: str
+    price: float
+
+class OrderCreate(BaseModel):
+    parent_id: UUID
+    items: list
+
+
+class AccountCreate(BaseModel):
+    account_type: str
+    currency: str = "KES"
+    initial_deposit: Optional[float] = 0.0
+    user_id: Optional[UUID] = None

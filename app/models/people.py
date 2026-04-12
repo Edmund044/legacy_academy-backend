@@ -83,6 +83,7 @@ class Player(Base):
     pass_accuracy: Mapped[float | None] = mapped_column(Numeric(5, 2))
     sponsored: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=False)
     guardian: Mapped[str | None] = mapped_column(String(200))
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("parents.id"))
     dob: Mapped[date] = mapped_column(Date, nullable=False)
     position: Mapped[str | None] = mapped_column(String(60))
     status: Mapped[PlayerStatus] = mapped_column(Enum(PlayerStatus), nullable=False, default=PlayerStatus.active, index=True)
@@ -116,3 +117,15 @@ class Guardian(Base):
     user = relationship("User", back_populates="guardian_profiles")
     player = relationship("Player", back_populates="guardians")
     invoices = relationship("Invoice", back_populates="guardian")
+
+class Parent(Base):
+    __tablename__ = "parents"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+class Child(Base):
+    __tablename__ = "children"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    parent_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("parents.id"))
+    first_name : Mapped[str] = mapped_column(String)

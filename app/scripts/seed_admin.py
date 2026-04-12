@@ -19,12 +19,13 @@ async def seed():
         user = User(
             email="edmundopiyo2@gmail.com",
             password_hash=get_password_hash("Admin@1234"),
-            role="admin",
+            role="technical_director",
             first_name="Edmund",
             last_name="Opiyo",
             is_active=True,
         )
         db.add(user)
+        
         await db.commit()
         print("Admin seeded ✅")
 

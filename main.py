@@ -49,6 +49,18 @@ app = FastAPI(
         "- **Partnerships** — school partners, contracts, revenue restructuring\n"
         "- **Tournaments** — brackets, fixtures, live scores\n"
         "- **Analytics** — KPIs, revenue series, enrollment, social impact\n"
+        "- **Auth** — Register, login, JWT-secured endpoints\n"
+        "- **Accounts** — Create savings/current/loan accounts\n"
+        "- **Top Up** — Credit accounts (M-Pesa, bank-in)\n"
+        "- **Withdrawals** — Cash out from your account\n"
+        "- **Transfers** — Send money between accounts (0.5% fee, max KES 300)\n"
+        "- **Loans** — Apply → Approve → Disburse → Repay lifecycle\n"
+        "- **Statement** — Paginated transaction history with category filters\n"
+
+### Transaction Categories
+
+#`top_up` · `deposit` · `withdrawal` · `transfer_in` · `transfer_out` · `loan_disbursement` · `loan_repayment` · `fee` · `interest`
+   
     ),
     version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",

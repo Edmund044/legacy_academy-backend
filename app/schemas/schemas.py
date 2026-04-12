@@ -734,9 +734,16 @@ class StatementFilter(BaseModel):
 
 
 # transactions
-class ParentCreate(BaseModel):
+class GuardianCreate(BaseModel):
     first_name: str
     last_name: str
+    user_id: Optional[UUID] = None
+    player_id: Optional[UUID] = None
+    relationship_type: str
+    whatsapp_phone: Optional[str] = None
+    email: Optional[str] = None
+    is_primary: bool = True
+    created_at: Optional[datetime] = None
 
 class ChildCreate(BaseModel):
     parent_id: UUID

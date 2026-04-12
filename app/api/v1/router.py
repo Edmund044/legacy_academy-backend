@@ -21,6 +21,7 @@ from app.api.v1.endpoints.loans import router as loans_router
 from app.api.v1.endpoints.transactions import router as transactions_router
 from app.api.v1.endpoints.services import router as services_router
 from app.api.v1.endpoints.accounts import router as accounts_router
+from app.api.v1.endpoints.guardians import router as guardians_router
 
 api_router = APIRouter()
 
@@ -41,6 +42,7 @@ api_router.include_router(loans_router)
 api_router.include_router(transactions_router)
 api_router.include_router(services_router)
 api_router.include_router(accounts_router)
+api_router.include_router(guardians_router)
 # api_router.include_router(parents.router)
 # api_router.include_router(children.router)
 # api_router.include_router(services.router)

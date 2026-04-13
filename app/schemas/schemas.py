@@ -739,7 +739,7 @@ class GuardianCreate(BaseModel):
     last_name: str
     user_id: Optional[UUID] = None
     player_id: Optional[UUID] = None
-    relationship_type: str
+    relationship_type: str = None
     whatsapp_phone: Optional[str] = None
     email: Optional[str] = None
     is_primary: bool = True

@@ -4,12 +4,13 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.services import banking
 from app.core.deps import get_db, get_current_active_user, AdminOnly, Pagination
 from app.core.responses import ok, paginated
 from app.core.security import get_password_hash
 from app.schemas.schemas import GuardianCreate
 from app.models.people import Guardian
+from app.models.user import User
 
 router = APIRouter(prefix="/guardians", tags=["Guardians"])
 
@@ -53,9 +54,30 @@ async def create_parent(
     # if exists:
     #     raise HTTPException(409, {"code": "EMAIL_TAKEN", "message": "Email already registered"})
 
+   
+    exists = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
+    if exists:
+        raise HTTPException(409, {"code": "EMAIL_TAKEN", "message": "Email already registered"})
+    user = User(
+        email=body.email,
+        password_hash=get_password_hash(body.first_name.lower() + "@1234"),
+        role="parent",
+        first_name=body.first_name,
+        last_name=body.last_name,
+        phone=body.whatsapp_phone,
+    )
+    db.add(user)
+    await db.flush()
     guardian = Guardian(**body.model_dump(), referral_code=str(uuid.uuid4())[:8])
     db.add(guardian)
     await db.flush()
+    await banking.create_account(
+        db=db,
+        user_id=user.id,
+        account_type="current",
+        currency="KES",
+        initial_deposit=0,
+    )
     return ok({"id": str(guardian.id),
         "first_name": guardian.first_name, 
         "last_name": guardian.last_name,

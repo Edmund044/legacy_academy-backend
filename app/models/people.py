@@ -83,7 +83,7 @@ class Player(Base):
     pass_accuracy: Mapped[float | None] = mapped_column(Numeric(5, 2))
     sponsored: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=False)
     guardian: Mapped[str | None] = mapped_column(String(200))
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("parents.id"))
+    # parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("guardians.id"))
     dob: Mapped[date] = mapped_column(Date, nullable=False)
     position: Mapped[str | None] = mapped_column(String(60))
     status: Mapped[PlayerStatus] = mapped_column(Enum(PlayerStatus), nullable=False, default=PlayerStatus.active, index=True)

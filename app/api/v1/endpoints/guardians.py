@@ -11,7 +11,7 @@ from app.core.security import get_password_hash
 from app.schemas.schemas import GuardianCreate
 from app.models.people import Guardian
 
-router = APIRouter(prefix="/guardian", tags=["Guardians"])
+router = APIRouter(prefix="/guardians", tags=["Guardians"])
 
 
 @router.get("", summary="List all guardian (admin)")

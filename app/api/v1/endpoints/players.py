@@ -27,6 +27,10 @@ def _player_dict(p: Player) -> dict:
         "group_id": str(p.group_id) if p.group_id else None,
         "campus_id": str(p.campus_id) if p.campus_id else None,
         "group_name": p.group if p.group else None,
+        # "guardians": [
+        #     {"id": g.id, "first_name": g.first_name, "last_name": g.last_name, "email": g.email, "whatsapp_phone": g.whatsapp_phone}
+        #     for g in (p.guardians or [])
+        # ],
         "guardian": p.guardian if p.guardian else None,
         "sponsored": p.sponsored,
         "training_center": p.training_center if p.training_center else None,
@@ -55,7 +59,8 @@ async def list_players(
     # _=Depends(get_current_active_user),
 ):
     q = select(Player).options(
-    selectinload(Player.group))
+        selectinload(Player.guardians),
+        selectinload(Player.group))
     if status:
         q = q.where(Player.status == status)
     if group_id:

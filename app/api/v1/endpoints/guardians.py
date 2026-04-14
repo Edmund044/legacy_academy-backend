@@ -1,8 +1,8 @@
 """Users: list, create, me, get, update, delete."""
 from uuid import UUID
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from fastapi import APIRouter, Depends, HTTPException,Query
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import banking
 from app.core.deps import get_db, get_current_active_user, AdminOnly, Pagination
@@ -11,6 +11,7 @@ from app.core.security import get_password_hash
 from app.schemas.schemas import GuardianCreate
 from app.models.people import Guardian
 from app.models.user import User
+
 
 router = APIRouter(prefix="/guardians", tags=["Guardians"])
 
@@ -29,11 +30,62 @@ async def list_guardian(
         "last_name": e.last_name,
         "email": e.email,
         "whatsapp_phone": e.whatsapp_phone,
-        "player_id": str(e.player_id),
         "relationship_type": e.relationship_type,
         "is_primary": e.is_primary,
         "created_at": e.created_at.isoformat() if e.created_at else None
     } for e in rows]
+    return paginated(data, total, pg.page, pg.per_page)
+
+
+
+@router.get("/search", summary="List/Search guardians (admin)")
+async def list_guardian(
+    search: str | None = Query(default=None),
+    pg: Pagination = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    q = select(Guardian)
+
+    if search:
+        search_term = f"%{search}%"
+
+        q = q.where(
+            or_(
+                Guardian.first_name.ilike(search_term),
+                Guardian.last_name.ilike(search_term),
+                Guardian.email.ilike(search_term),
+                Guardian.whatsapp_phone.ilike(search_term),
+            )
+        )
+
+
+    total = (
+        await db.execute(
+            select(func.count()).select_from(q.subquery())
+        )
+    ).scalar_one()
+
+  
+    rows = (
+        await db.execute(
+            q.offset(pg.offset).limit(pg.per_page)
+        )
+    ).scalars().all()
+
+    data = [
+        {
+            "id": str(e.id),
+            "first_name": e.first_name,
+            "last_name": e.last_name,
+            "email": e.email,
+            "whatsapp_phone": e.whatsapp_phone,
+            "relationship_type": e.relationship_type,
+            "is_primary": e.is_primary,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in rows
+    ]
+
     return paginated(data, total, pg.page, pg.per_page)
 
 

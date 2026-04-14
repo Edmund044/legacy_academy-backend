@@ -153,6 +153,7 @@ class PlayerCreate(BaseModel):
     assists: Optional[int] = None
     pass_accuracy: Optional[float] = Field(default=None, ge=0, le=100)
     sponsored: int = False
+    guardian_id: Optional[UUID] = None
     guardian: Optional[str] = None
     dob: date
     position: Optional[str] = None

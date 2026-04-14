@@ -52,8 +52,8 @@ async def create_account(db: AsyncSession, user_id: str, account_type: AccountTy
     db.add(account)
     await db.flush()
 
-    if
-        await _record_transaction(
+    
+    await _record_transaction(
             db=db,
             tx_type=TransactionType.CREDIT,
             category=TransactionCategory.DEPOSIT,

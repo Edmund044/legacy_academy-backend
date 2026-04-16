@@ -29,7 +29,7 @@ async def list_subs(pg: Pagination = Depends(), db: AsyncSession = Depends(get_d
 
 
 @router.post("/subscriptions", status_code=201, summary="Create subscription")
-async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOnly)):
+async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db)):
     s = Subscription(**body.model_dump())
     db.add(s)
     await db.flush()

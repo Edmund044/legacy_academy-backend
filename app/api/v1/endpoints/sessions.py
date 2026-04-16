@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.deps import get_db, Pagination
 from app.core.responses import ok, paginated
-from app.models.session import Session, SessionEnrollment, EnrollStatus
+from app.models.session import Session, SessionEnrollment
 from app.schemas.schemas import SessionCreate, SessionUpdate, EnrollIn, CheckInIn
 import json
+from app.services import banking
+from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 

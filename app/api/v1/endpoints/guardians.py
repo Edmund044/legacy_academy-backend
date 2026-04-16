@@ -9,9 +9,9 @@ from app.core.deps import get_db, get_current_active_user, AdminOnly, Pagination
 from app.core.responses import ok, paginated
 from app.core.security import get_password_hash
 from app.schemas.schemas import GuardianCreate
-from app.models.people import Guardian
+from app.models.people import Guardian, Player
 from app.models.user import User
-
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/guardians", tags=["Guardians"])
 
@@ -147,12 +147,59 @@ async def create_parent(
 #     return ok(UserOut.model_validate(current_parent).model_dump())
 
 
-# @router.get("/{parent_id}", summary="Get parent by ID")
-# async def get_parent(parent_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(AdminOnly)):
-#     parent = (await db.execute(select(User).where(User.id == parent_id))).scalar_one_or_none()
-#     if not parent:
-#         raise HTTPException(404, {"code": "NOT_FOUND", "message": "User not found"})
-#     return ok(UserOut.model_validate(parent).model_dump())
+@router.get("/{guardian_id}", summary="Get parent by ID")
+async def get_parent(guardian_id: UUID, db: AsyncSession = Depends(get_db)):
+
+    guardian_query = select(Guardian).options(
+        selectinload(Guardian.players)
+            .selectinload(Player.group),
+        selectinload(Guardian.players)
+            .selectinload(Player.subscriptions)
+    )
+
+    if guardian_id:
+        guardian_query = guardian_query.where(Guardian.user_id == guardian_id)
+
+    result = await db.execute(
+        guardian_query.order_by(Guardian.created_at.desc())
+    )
+
+    guardian = result.scalars().first()
+
+    if not guardian:
+        raise HTTPException(404, {"code": "NOT_FOUND", "message": "Guardian not found"})
+    
+    return ok({
+        "id": str(guardian.id),
+        "first_name": guardian.first_name,
+        "last_name": guardian.last_name,
+        "email": guardian.email,
+        "whatsapp_phone": guardian.whatsapp_phone,
+        "relationship_type": guardian.relationship_type,
+        "is_primary": guardian.is_primary,
+        "created_at": guardian.created_at.isoformat() if guardian.created_at else None,
+        "players": [{
+            "id": str(p.id),
+            "first_name": p.first_name,
+            "last_name": p.last_name,
+            "dob": p.dob.isoformat(),
+            "position": p.position,
+            "status": p.status.value,
+            "group_id": str(p.group_id) if p.group_id else None,
+            "campus_id": str(p.campus_id) if p.campus_id else None,
+            "group_name": p.group.name if p.group else None,
+            "sponsored": p.sponsored,
+            "training_center": p.training_center if p.training_center else None,
+            "subscriptions": [{
+            "id": str(s.id),
+            "player_id": str(s.player_id),
+            "plan_name": s.plan_name,
+            "status": s.status.value,
+            "start_date": s.start_date.isoformat(),
+            "end_date": s.end_date.isoformat() if s.end_date else None,
+        } for s in p.subscriptions]
+        } for p in guardian.players]
+    })
 
 
 # @router.patch("/{parent_id}", summary="Update parent")

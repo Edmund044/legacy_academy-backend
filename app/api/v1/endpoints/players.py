@@ -9,6 +9,7 @@ from app.core.responses import ok, paginated
 from app.models.people import Player
 from app.models.player_dev import PlayerStat, PlayerPhysical, PlayerInjury, DevTimeline, VideoHighlight
 from app.schemas.schemas import PlayerCreate, PlayerUpdate, PlayerOut, PlayerPhysicalCreate
+from app.services.whatssap_notifications import send_whatsapp_notification
 
 router = APIRouter(prefix="/players", tags=["Players"])
 
@@ -33,6 +34,14 @@ def _player_dict(p: Player) -> dict:
         # ],
         "guardian": p.guardian if p.guardian else None,
         "sponsored": p.sponsored,
+        "subscriptions": [{
+            "id": str(s.id),
+            "player_id": str(s.player_id),
+            "plan_name": s.plan_name,
+            "status": s.status.value,
+            "start_date": s.start_date.isoformat(),
+            "end_date": s.end_date.isoformat() if s.end_date else None,
+        } for s in p.subscriptions],
         "training_center": p.training_center if p.training_center else None,
         "stats": {
                 "goals": p.goals if p.goals else None,
@@ -58,16 +67,18 @@ async def list_players(
     # ,
     # _=Depends(get_current_active_user),
 ):
-    q = select(Player).options(
-        selectinload(Player.guardians),
-        selectinload(Player.group))
-    if status:
-        q = q.where(Player.status == status)
-    if group_id:
-        q = q.where(Player.group_id == group_id)
-    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
-    rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
-    return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)
+    send_whatsapp_notification("254701376319", "Hello from FastAPI 🚀")
+    # q = select(Player).options(
+    #     selectinload(Player.guardians),
+    #     selectinload(Player.subscriptions),
+    #     selectinload(Player.group))
+    # if status:
+    #     q = q.where(Player.status == status)
+    # if group_id:
+    #     q = q.where(Player.group_id == group_id)
+    # total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    # rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
+    # return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)
 
 
 @router.post("", status_code=201, summary="Register a player")

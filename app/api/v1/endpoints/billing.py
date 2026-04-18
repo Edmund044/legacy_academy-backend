@@ -2,13 +2,14 @@
 from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_,or_
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from app.core.deps import get_db, get_current_active_user, AdminOnly, AdminOrParent, Pagination
 from app.core.responses import ok, paginated
 from app.models.billing import Subscription, Invoice, Payment, RevenueSplit, PaymentStatus, PaymentMethod
 from app.schemas.schemas import SubCreate, SubUpdate, PaymentInitiate, SubOut, InvoiceOut, PaymentOut
+from app.models.people import Player
 
 router = APIRouter(prefix="/billing", tags=["Billing & Payments"])
 
@@ -16,16 +17,45 @@ router = APIRouter(prefix="/billing", tags=["Billing & Payments"])
 # ── Subscriptions ──────────────────────────────────────────────────────────────
 
 @router.get("/subscriptions", summary="List subscriptions")
-async def list_subs(pg: Pagination = Depends(), db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+async def list_subs(pg: Pagination = Depends(), db: AsyncSession = Depends(get_db),
+                    #  _=Depends(get_current_active_user)
+                     ):
     total = (await db.execute(select(func.count()).select_from(Subscription))).scalar_one()
-    rows = (await db.execute(select(Subscription).offset(pg.offset).limit(pg.per_page))).scalars().all()
+    total_active = (await db.execute(select(func.count()).select_from(Subscription).where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_membership")))).scalar_one()
+    net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes)).where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_membership")))).scalar_one() or 0
+    inactive_count = total - total_active
+    rows = (await db.execute(select(Subscription).options(
+    selectinload(Subscription.player).selectinload(Player.group)).offset(pg.offset).limit(pg.per_page))).scalars().all()
     data = [{
-        "id": str(s.id), "player_id": str(s.player_id), "plan_type": s.plan_type.value,
-        "annual_fee_kes": s.annual_fee_kes, "net_fee_kes": s.net_fee_kes,
-        "scholarship_applied": s.scholarship_applied, "status": s.status.value,
+        "id": str(s.id),
+        "player_id": str(s.player_id),
+        "plan_type": s.plan_type.value,
+        "annual_fee_kes": s.annual_fee_kes,
+        "net_fee_kes": s.net_fee_kes,
+        "scholarship_applied": s.scholarship_applied, 
+        "discount_pct": s.discount_pct,
+        "status": s.status.value,
+        "created_at": s.created_at.isoformat(),
+        "player": {
+            "id": str(s.player.id),
+            "first_name": s.player.first_name,
+            "last_name": s.player.last_name,
+            "dob": s.player.dob.isoformat(),
+            "position": s.player.position,
+            "status": s.player.status.value,
+            "group_id": str(s.player.group_id) if s.player.group_id else None,
+            "campus_id": str(s.player.campus_id) if s.player.campus_id else None,
+            "group_name": s.player.group.name if s.player.group else None,
+            "sponsored": s.player.sponsored,
+            "training_center": s.player.training_center if s.player.training_center else None,
+        },
         "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None,
     } for s in rows]
-    return paginated(data, total, pg.page, pg.per_page)
+    return paginated(data, total, pg.page, pg.per_page,meta={
+    "total_active": total_active,
+    "net_revenue_kes": net_revenue_kes,
+    "inactive_count": inactive_count
+})
 
 
 @router.post("/subscriptions", status_code=201, summary="Create subscription")
@@ -33,7 +63,7 @@ async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db)):
     s = Subscription(**body.model_dump())
     db.add(s)
     await db.flush()
-    return ok({"id": str(s.id), "plan_type": s.plan_type.value, "net_fee_kes": s.net_fee_kes})
+    return ok({"id": str(s.id), "plan_type": s.plan_type, "net_fee_kes": s.net_fee_kes})
 
 
 @router.get("/subscriptions/{sub_id}", summary="Get subscription")
@@ -72,9 +102,46 @@ async def delete_sub(sub_id: UUID, db: AsyncSession = Depends(get_db), _=Depends
 async def list_attendance_billing(
     pg: Pagination = Depends(),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_user),
+    # _=Depends(get_current_active_user),
 ):
-    return ok({"message": "Attendance billing list — connect AttendanceBilling query", "items": []})
+    total = (await db.execute(select(func.count()).select_from(Subscription))).scalar_one()
+    total_active = (await db.execute(select(func.count()).select_from(Subscription).where(and_(Subscription.status == "active",or_(Subscription.plan_type == "monthly_regular_class",Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "quarterly_regular_class"))))).scalar_one()
+    net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes)).where(and_(Subscription.status == "active",or_(Subscription.plan_type == "monthly_regular_class",Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "quarterly_regular_class"))))).scalar_one() or 0
+    inactive_count = total - total_active
+    rows = (await db.execute(select(Subscription)
+                             .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "monthly_regular_class",Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "quarterly_regular_class")))
+                             .options(
+    selectinload(Subscription.player).selectinload(Player.group)).offset(pg.offset).limit(pg.per_page))).scalars().all()
+    data = [{
+        "id": str(s.id),
+        "player_id": str(s.player_id),
+        "plan_type": s.plan_type.value,
+        "annual_fee_kes": s.annual_fee_kes,
+        "net_fee_kes": s.net_fee_kes,
+        "scholarship_applied": s.scholarship_applied, 
+        "discount_pct": s.discount_pct,
+        "status": s.status.value,
+        "created_at": s.created_at.isoformat(),
+        "player": {
+            "id": str(s.player.id),
+            "first_name": s.player.first_name,
+            "last_name": s.player.last_name,
+            "dob": s.player.dob.isoformat(),
+            "position": s.player.position,
+            "status": s.player.status.value,
+            "group_id": str(s.player.group_id) if s.player.group_id else None,
+            "campus_id": str(s.player.campus_id) if s.player.campus_id else None,
+            "group_name": s.player.group.name if s.player.group else None,
+            "sponsored": s.player.sponsored,
+            "training_center": s.player.training_center if s.player.training_center else None,
+        },
+        "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None,
+    } for s in rows]
+    return paginated(data, total, pg.page, pg.per_page,meta={
+    "total_active": total_active,
+    "net_revenue_kes": net_revenue_kes,
+    "inactive_count": inactive_count
+})
 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────

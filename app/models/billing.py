@@ -5,11 +5,14 @@ from sqlalchemy import (Boolean, CheckConstraint, Date, DateTime, Enum, ForeignK
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
-
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import case
 
 class SubPlan(str, enum.Enum):
-    annual_elite = "annual_elite"; annual_standard = "annual_standard"
-    sibling_discount = "sibling_discount"; scholarship = "scholarship"
+    annual_elite = "annual_membership"; monthly_regular_class = "monthly_regular_class"
+    quarterly_regular_class = "quarterly_regular_class"
+    scholarship_regular = "scholarship_regular"
+    scholarship_annual = "scholarship_annual"
 
 class SubStatus(str, enum.Enum):
     active = "active"; expired = "expired"; suspended = "suspended"; pending_renewal = "pending_renewal"
@@ -45,9 +48,18 @@ class Subscription(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     player = relationship("Player", back_populates="subscriptions")
 
-    @property
+    @hybrid_property
     def net_fee_kes(self) -> int:
-        return 0 if self.scholarship_applied else int(self.annual_fee_kes * (1 - self.discount_pct / 100))
+        return 0 if self.scholarship_applied else int(
+            self.annual_fee_kes * (1 - self.discount_pct / 100)
+        )
+
+    @net_fee_kes.expression
+    def net_fee_kes(cls):
+        return case(
+            (cls.scholarship_applied == True, 0),
+            else_=cls.annual_fee_kes * (1 - cls.discount_pct / 100)
+        )
 
 
 class AttendanceBilling(Base):

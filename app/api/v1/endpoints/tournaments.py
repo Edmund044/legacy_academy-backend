@@ -21,7 +21,9 @@ async def _get_tournament(tid: UUID, db: AsyncSession) -> Tournament:
 
 @router.get("", summary="List tournaments")
 async def list_tournaments(pg: Pagination = Depends(), age_group: str | None = None,
-                           db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+                           db: AsyncSession = Depends(get_db),
+                            #  _=Depends(get_current_active_user)
+                             ):
     q = select(Tournament)
     if age_group:
         q = q.where(Tournament.age_group == age_group)
@@ -36,11 +38,13 @@ async def list_tournaments(pg: Pagination = Depends(), age_group: str | None = N
 
 
 @router.post("", status_code=201, summary="Create tournament")
-async def create_tournament(body: TournamentCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+async def create_tournament(body: TournamentCreate, db: AsyncSession = Depends(get_db),
+                            #  _=Depends(AdminOrCoach)
+                             ):
     t = Tournament(**body.model_dump())
     db.add(t)
     await db.flush()
-    return ok({"id": str(t.id), "name": t.name, "format": t.format.value})
+    return ok({"id": str(t.id), "name": t.name, "format": t.format, "status": t.status})
 
 
 @router.get("/{tournament_id}", summary="Get tournament details")

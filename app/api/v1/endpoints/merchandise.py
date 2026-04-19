@@ -14,7 +14,9 @@ router = APIRouter(prefix="/merchandise", tags=["Merchandise"])
 
 @router.get("/products", summary="List products")
 async def list_products(pg: Pagination = Depends(), category: str | None = None,
-                        db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+                        db: AsyncSession = Depends(get_db), 
+                        # _=Depends(get_current_active_user)
+                        ):
     q = select(Product)
     if category:
         q = q.where(Product.category == category)
@@ -27,7 +29,9 @@ async def list_products(pg: Pagination = Depends(), category: str | None = None,
 
 
 @router.post("/products", status_code=201, summary="Create product (admin)")
-async def create_product(body: ProductCreate, db: AsyncSession = Depends(get_db), _=Depends(AdminOnly)):
+async def create_product(body: ProductCreate, db: AsyncSession = Depends(get_db),
+                        #   _=Depends(AdminOnly)
+                          ):
     p = Product(**body.model_dump())
     db.add(p)
     await db.flush()

@@ -10,6 +10,7 @@ from app.core.responses import ok, paginated
 from app.models.billing import Subscription, Invoice, Payment, RevenueSplit, PaymentStatus, PaymentMethod
 from app.schemas.schemas import SubCreate, SubUpdate, PaymentInitiate, SubOut, InvoiceOut, PaymentOut
 from app.models.people import Player
+from app.models.session import Session
 
 router = APIRouter(prefix="/billing", tags=["Billing & Payments"])
 
@@ -236,7 +237,8 @@ async def list_splits(
     total_reconciled = (await db.execute(select(func.count()).select_from(RevenueSplit).where(RevenueSplit.payout_status == "reconciled"))).scalar_one()
     total_disputed = (await db.execute(select(func.count()).select_from(RevenueSplit).where(RevenueSplit.payout_status == "disputed"))).scalar_one()
     
-    rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
+    rows = (await db.execute(q.select(RevenueSplit).options(
+    selectinload(RevenueSplit.session).selectinload(Session.coach)).offset(pg.offset).limit(pg.per_page))).scalars().all()
     data = [{
         "id": str(r.id), "session_id": str(r.session_id), "coach_id": str(r.coach_id),
         "session_rate_kes": float(r.session_rate_kes),
@@ -244,6 +246,12 @@ async def list_splits(
         "coach_amount_kes": float(r.coach_amount_kes),
         "academy_amount_kes": float(r.academy_amount_kes),
         "payout_status": r.payout_status.value,
+        "processed_at": r.processed_at.isoformat() if r.processed_at else None,
+        "session": {
+                "id": str(r.session.id),
+                "session_name": r.session.name,
+                "coach_name": f"{r.session.coach.first_name} {r.session.coach.last_name}" if r.session.coach else None,
+            },
     } for r in rows]
     return paginated(data, total, pg.page, pg.per_page, meta={
         "total_revenue_kes": total_revenue,

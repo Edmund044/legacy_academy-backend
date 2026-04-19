@@ -68,17 +68,17 @@ async def list_players(
     # _=Depends(get_current_active_user),
 ):
     send_whatsapp_notification("254701376319", "Hello from FastAPI 🚀")
-    # q = select(Player).options(
-    #     selectinload(Player.guardians),
-    #     selectinload(Player.subscriptions),
-    #     selectinload(Player.group))
-    # if status:
-    #     q = q.where(Player.status == status)
-    # if group_id:
-    #     q = q.where(Player.group_id == group_id)
-    # total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
-    # rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
-    # return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)
+    q = select(Player).options(
+        selectinload(Player.guardians),
+        selectinload(Player.subscriptions),
+        selectinload(Player.group))
+    if status:
+        q = q.where(Player.status == status)
+    if group_id:
+        q = q.where(Player.group_id == group_id)
+    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
+    return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)
 
 
 @router.post("", status_code=201, summary="Register a player")

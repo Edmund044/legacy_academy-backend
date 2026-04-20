@@ -2,7 +2,7 @@
 from uuid import UUID
 from datetime import date as dt_date
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import select, func, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.deps import get_db, Pagination
@@ -12,6 +12,7 @@ from app.schemas.schemas import SessionCreate, SessionUpdate, EnrollIn, CheckInI
 import json
 from app.services import banking
 from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
+from typing import List
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
@@ -46,30 +47,69 @@ async def list_sessions(
     coach_id: UUID | None = None,
     session_id: UUID | None = None,
     status: str | None = None,
+    enrollment_status: str | None = None,
+    player_ids: List[UUID] | None = Query(None),
     from_: str = Query(None, alias="from"),
     to: str | None = None,
-    db: AsyncSession = Depends(get_db)
-    # ,
-    # _=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     q = select(Session).options(
-    selectinload(Session.coach),
-    selectinload(Session.enrollments),
-    selectinload(Session.handovers)
-)
+        selectinload(Session.coach),
+        selectinload(Session.enrollments),
+        selectinload(Session.handovers),
+    )
+
     if coach_id:
         q = q.where(Session.coach_id == coach_id)
+
     if session_id:
         q = q.where(Session.id == session_id)
+
     if status:
         q = q.where(Session.status == status)
+
+    if enrollment_status:
+        q = q.join(Session.enrollments).where(
+            SessionEnrollment.status == enrollment_status
+        )
+
+    # ✅ NEW: exclude sessions where ANY of the given players are enrolled
+    if player_ids:
+        subq = (
+            select(SessionEnrollment.session_id)
+            .where(
+                SessionEnrollment.session_id == Session.id,
+                SessionEnrollment.player_id.in_(player_ids),
+            )
+        )
+        q = q.where(~exists(subq))
+
     if from_:
         q = q.where(Session.session_date >= from_)
+
     if to:
         q = q.where(Session.session_date <= to)
-    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
-    rows = (await db.execute(q.order_by(Session.session_date.desc()).offset(pg.offset).limit(pg.per_page))).scalars().all()
-    return paginated([_s_dict(s) for s in rows], total, pg.page, pg.per_page)
+
+    total = (
+        await db.execute(
+            select(func.count()).select_from(q.subquery())
+        )
+    ).scalar_one()
+
+    rows = (
+        await db.execute(
+            q.order_by(Session.session_date.desc())
+            .offset(pg.offset)
+            .limit(pg.per_page)
+        )
+    ).scalars().all()
+
+    return paginated(
+        [_s_dict(s) for s in rows],
+        total,
+        pg.page,
+        pg.per_page,
+    )
 
 
 @router.post("", status_code=201, summary="Create a session")

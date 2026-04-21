@@ -9,7 +9,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import case
 
 class SubPlan(str, enum.Enum):
-    annual_elite = "annual_membership"; monthly_regular_class = "monthly_regular_class"
+    annual_standard = "annual_standard"; 
+    monthly_regular_class = "monthly_regular_class"
     quarterly_regular_class = "quarterly_regular_class"
     scholarship_regular = "scholarship_regular"
     scholarship_annual = "scholarship_annual"

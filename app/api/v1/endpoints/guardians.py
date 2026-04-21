@@ -191,12 +191,13 @@ async def get_parent(guardian_id: UUID, db: AsyncSession = Depends(get_db)):
             "sponsored": p.sponsored,
             "training_center": p.training_center if p.training_center else None,
             "subscriptions": [{
-            "id": str(s.id),
-            "player_id": str(s.player_id),
-            "plan_name": s.plan_name,
-            "status": s.status.value,
-            "start_date": s.start_date.isoformat(),
-            "end_date": s.end_date.isoformat() if s.end_date else None,
+                            "id": str(s.id),
+                            "player_id": str(s.player_id),
+                            "plan_name": s.plan_type,
+                            "status": s.status,
+                            "start_date": s.created_at.isoformat(),
+                            "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None,
+                            # "end_date": s.end_date.isoformat() if s.end_date else None,
         } for s in p.subscriptions]
         } for p in guardian.players]
     })

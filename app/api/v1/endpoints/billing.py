@@ -22,13 +22,38 @@ async def list_subs(pg: Pagination = Depends(), db: AsyncSession = Depends(get_d
                     #  _=Depends(get_current_active_user)
                      ):
     total = (await db.execute(select(func.count()).select_from(Subscription))).scalar_one()
-    total_active = (await db.execute(select(func.count()).select_from(Subscription).where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_membership")))).scalar_one()
-    net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes)).where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_membership")))).scalar_one() or 0
+    total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                     .where(and_(Subscription.status == "active")))).scalar_one()
+    annual_standard_total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                     .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_standard"))))).scalar_one()
+    monthly_regular_class_total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                     .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "monthly_regular_class"))))).scalar_one()
+    quarterly_regular_total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                     .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "quarterly_regular_class"))))).scalar_one()
+    scholarship_annual_total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                     .where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual")))).scalar_one()
+    scholarship_regular_total_active = (await db.execute(select(func.count()).select_from(Subscription)
+                                        .where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_regular")))).scalar_one()
+    net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active")))).scalar_one() or 0
+    annual_standard_net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_standard"))))).scalar_one() or 0
+    monthly_regular_class_net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "monthly_regular_class"))))).scalar_one() or 0
+    quarterly_regular_class_net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_regular",Subscription.plan_type == "quarterly_regular_class"))))).scalar_one() or 0
+    scholarship_annual_net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_annual")))).scalar_one() or 0
+    scholarship_regular_net_revenue_kes = (await db.execute(select(func.sum(Subscription.net_fee_kes))
+                                        .where(and_(Subscription.status == "active",Subscription.plan_type == "scholarship_regular")))).scalar_one() or 0
     inactive_count = total - total_active
-    rows = (await db.execute(select(Subscription).options(
-    selectinload(Subscription.player).selectinload(Player.group)).offset(pg.offset).limit(pg.per_page))).scalars().all()
+    rows = (await db.execute(select(Subscription)
+                             .where(and_(Subscription.status == "active",or_(Subscription.plan_type == "scholarship_annual",Subscription.plan_type == "annual_standard")))
+                             .options(
+                                selectinload(Subscription.player).selectinload(Player.group))
+                                .offset(pg.offset).limit(pg.per_page))).scalars().all()
     data = [{
-        "id": str(s.id),
+        "id": str(s.id), 
         "player_id": str(s.player_id),
         "plan_type": s.plan_type.value,
         "annual_fee_kes": s.annual_fee_kes,
@@ -55,7 +80,17 @@ async def list_subs(pg: Pagination = Depends(), db: AsyncSession = Depends(get_d
     return paginated(data, total, pg.page, pg.per_page,meta={
     "total_active": total_active,
     "net_revenue_kes": net_revenue_kes,
-    "inactive_count": inactive_count
+    "inactive_count": inactive_count,
+    "annual_standard_net_revenue_kes": annual_standard_net_revenue_kes,
+    "monthly_regular_class_net_revenue_kes": monthly_regular_class_net_revenue_kes,
+    "quarterly_regular_class_net_revenue_kes": quarterly_regular_class_net_revenue_kes,
+    "scholarship_annual_net_revenue_kes": scholarship_annual_net_revenue_kes,
+    "scholarship_regular_net_revenue_kes": scholarship_regular_net_revenue_kes,
+    "annual_standard_total_active": annual_standard_total_active,
+    "monthly_regular_class_total_active": monthly_regular_class_total_active,
+    "quarterly_regular_total_active": quarterly_regular_total_active,
+    "scholarship_annual_total_active": scholarship_annual_total_active,
+    "scholarship_regular_total_active": scholarship_regular_total_active,
 })
 
 
@@ -67,14 +102,39 @@ async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db)):
     return ok({"id": str(s.id), "plan_type": s.plan_type, "net_fee_kes": s.net_fee_kes})
 
 
-@router.get("/subscriptions/{sub_id}", summary="Get subscription")
-async def get_sub(sub_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
-    s = (await db.execute(select(Subscription).where(Subscription.id == sub_id))).scalar_one_or_none()
+@router.get("/subscriptions/{player_id}", summary="Get subscription by player id")
+async def get_sub(player_id: UUID, db: AsyncSession = Depends(get_db), 
+                  #_=Depends(get_current_active_user)
+                  ):
+    s = (await db.execute(select(Subscription).options(
+    selectinload(Subscription.player).selectinload(Player.group)).where(Subscription.player_id == player_id))).scalar_one_or_none()
     if not s:
         raise HTTPException(404, {"code": "NOT_FOUND", "message": "Subscription not found"})
-    return ok({"id": str(s.id), "player_id": str(s.player_id), "plan_type": s.plan_type.value,
-               "annual_fee_kes": s.annual_fee_kes, "net_fee_kes": s.net_fee_kes,
-               "status": s.status.value, "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None})
+    return ok({
+        "id": str(s.id), 
+        "player_id": str(s.player_id),
+        "plan_type": s.plan_type.value,
+        "annual_fee_kes": s.annual_fee_kes,
+        "net_fee_kes": s.net_fee_kes,
+        "scholarship_applied": s.scholarship_applied, 
+        "discount_pct": s.discount_pct,
+        "status": s.status.value,
+        "created_at": s.created_at.isoformat(),
+        "player": {
+            "id": str(s.player.id),
+            "first_name": s.player.first_name,
+            "last_name": s.player.last_name,
+            "dob": s.player.dob.isoformat(),
+            "position": s.player.position,
+            "status": s.player.status.value,
+            "group_id": str(s.player.group_id) if s.player.group_id else None,
+            "campus_id": str(s.player.campus_id) if s.player.campus_id else None,
+            "group_name": s.player.group.name if s.player.group else None,
+            "sponsored": s.player.sponsored,
+            "training_center": s.player.training_center if s.player.training_center else None,
+        },
+        "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None,
+    })
 
 
 @router.patch("/subscriptions/{sub_id}", summary="Update subscription")
@@ -237,8 +297,16 @@ async def list_splits(
     total_reconciled = (await db.execute(select(func.count()).select_from(RevenueSplit).where(RevenueSplit.payout_status == "reconciled"))).scalar_one()
     total_disputed = (await db.execute(select(func.count()).select_from(RevenueSplit).where(RevenueSplit.payout_status == "disputed"))).scalar_one()
     
-    rows = (await db.execute(q.select(RevenueSplit).options(
-    selectinload(RevenueSplit.session).selectinload(Session.coach)).offset(pg.offset).limit(pg.per_page))).scalars().all()
+    rows = (
+    await db.execute(
+        q.options(
+            selectinload(RevenueSplit.session)
+            .selectinload(Session.coach)
+        )
+        .offset(pg.offset)
+        .limit(pg.per_page)
+    )
+).scalars().all()
     data = [{
         "id": str(r.id), "session_id": str(r.session_id), "coach_id": str(r.coach_id),
         "session_rate_kes": float(r.session_rate_kes),
@@ -249,8 +317,13 @@ async def list_splits(
         "processed_at": r.processed_at.isoformat() if r.processed_at else None,
         "session": {
                 "id": str(r.session.id),
-                "session_name": r.session.name,
-                "coach_name": f"{r.session.coach.first_name} {r.session.coach.last_name}" if r.session.coach else None,
+                "name": r.session.name,
+                "session_date": r.session.session_date.isoformat(),
+                "type": r.session.type,
+                "enrollment_cap": r.session.enrollment_cap,
+                "status": r.session.status.value,
+                "start_time": r.session.start_time.isoformat(),
+                "coach": f"{r.session.coach.full_name}" if r.session.coach.full_name else None,
             },
     } for r in rows]
     return paginated(data, total, pg.page, pg.per_page, meta={

@@ -458,6 +458,7 @@ class SubCreate(BaseModel):
     discount_pct: float = Field(ge=0, le=100, default=0)
     scholarship_applied: bool = False
     renewal_date: Optional[date] = None
+    plan_type: str
 
 
 class SubUpdate(BaseModel):

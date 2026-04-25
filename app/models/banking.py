@@ -18,6 +18,7 @@ class AccountType(str, enum.Enum):
     SAVINGS = "savings"
     CURRENT = "current"
     LOAN = "loan"
+    ACADEMY_REVENUE = "academy_revenue"
 
 
 class TransactionType(str, enum.Enum):

@@ -1,16 +1,19 @@
 """Billing endpoints: subscriptions CRUD, attendance-billing, invoices, payments, revenue-splits."""
 from uuid import UUID
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, and_,or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload,joinedload
 from app.core.deps import get_db, get_current_active_user, AdminOnly, AdminOrParent, Pagination
 from app.core.responses import ok, paginated
-from app.models.billing import Subscription, Invoice, Payment, RevenueSplit, PaymentStatus, PaymentMethod
+from app.models.billing import Subscription, Invoice, Payment, RevenueSplit, PaymentStatus,InvoiceStatus, PaymentMethod
 from app.schemas.schemas import SubCreate, SubUpdate, PaymentInitiate, SubOut, InvoiceOut, PaymentOut
 from app.models.people import Player
 from app.models.session import Session
+from app.services import banking
+from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
+from app.models.people import Guardian
 
 router = APIRouter(prefix="/billing", tags=["Billing & Payments"])
 
@@ -99,7 +102,56 @@ async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db)):
     s = Subscription(**body.model_dump())
     db.add(s)
     await db.flush()
-    return ok({"id": str(s.id), "plan_type": s.plan_type, "net_fee_kes": s.net_fee_kes})
+
+    player = await db.get(Player, s.player_id)
+    guardian = await db.get(Guardian, player.guardian_id)
+    try:
+        p = Payment(
+            payer_id=guardian.user_id if guardian and guardian.user_id else None,
+            amount_kes=body.annual_fee_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Subscription fee for {s.plan_type} plan",
+            status=PaymentStatus.completed
+        )
+        db.add(p)
+    except Exception as e:
+        p = Payment(
+            payer_id=guardian.user_id if guardian and guardian.user_id else None,
+            amount_kes=body.annual_fee_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Subscription fee for {s.plan_type} plan",
+            status=PaymentStatus.failed
+        )
+        db.add(p)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    try:
+        await banking._record_transaction(
+            db=db,
+            tx_type=TransactionType.DEBIT,
+            category=TransactionCategory.DEPOSIT,
+            amount=body.annual_fee_kes,
+            description=f"Subscription fee for {s.plan_type} plan",
+            balance_before= (await banking._get_account(db, guardian.user_id)).balance,
+            balance_after=(await banking._get_account(db, guardian.user_id)).balance - body.annual_fee_kes,
+            fee=0,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    invoice = Invoice(
+            guardian_id= player.guardian_id,
+            ref= f"INV-{s.id.hex[:8].upper()}",
+            period_start= date.today(),
+            period_end= date.today() + timedelta(days=365),
+            total_kes= body.annual_fee_kes,
+            status= InvoiceStatus.draft,
+            issued_at= datetime.now(timezone.utc)
+    )
+    db.add(invoice)
+    
+    await db.flush()
+    return ok({"id": str(s.id), "plan_type": s.plan_type, "net_fee_kes": body.annual_fee_kes})
 
 
 @router.get("/subscriptions/{player_id}", summary="Get subscription by player id")

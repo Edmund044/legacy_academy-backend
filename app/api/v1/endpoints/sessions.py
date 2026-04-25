@@ -95,7 +95,20 @@ async def list_sessions(
             select(func.count()).select_from(q.subquery())
         )
     ).scalar_one()
-
+    
+    total_planned_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.status == "planned"))).scalar_one()
+    total_active_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.status == "active"))).scalar_one()
+    total_completed_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.status == "completed"))).scalar_one()
+    total_cancelled_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.status == "cancelled"))).scalar_one()
+    total_group_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.type == "group"))).scalar_one()
+    total_individual_sessions= (await db.execute(select(func.count()).select_from(Session)
+                                     .where(Session.type == "individual"))).scalar_one()
+    
     rows = (
         await db.execute(
             q.order_by(Session.session_date.desc())
@@ -109,6 +122,14 @@ async def list_sessions(
         total,
         pg.page,
         pg.per_page,
+        meta={
+            "total_planned_sessions": total_planned_sessions,
+            "total_active_sessions": total_active_sessions,
+            "total_completed_sessions": total_completed_sessions,
+            "total_cancelled_sessions": total_cancelled_sessions,
+            "total_group_sessions": total_group_sessions,
+            "total_individual_sessions": total_individual_sessions,
+        }
     )
 
 

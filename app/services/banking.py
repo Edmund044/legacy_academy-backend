@@ -68,22 +68,22 @@ async def create_account(db: AsyncSession, user_id: str, account_type: AccountTy
     return account
 
 
-# async def get_user_accounts(db: AsyncSession, user_id: str) -> List[Account]:
-#     result = await db.execute(select(Account).where(Account.user_id == user_id))
-#     return result.scalars().all()
+async def get_user_accounts(db: AsyncSession, user_id: str) -> List[Account]:
+    result = await db.execute(select(Account).where(Account.user_id == user_id))
+    return result.scalars().all()
 
 
-# async def _get_account(db: AsyncSession, account_id: str, user_id: Optional[str] = None) -> Account:
-#     q = select(Account).where(Account.id == account_id)
-#     if user_id:
-#         q = q.where(Account.user_id == user_id)
-#     result = await db.execute(q)
-#     account = result.scalar_one_or_none()
-#     if not account:
-#         raise HTTPException(status_code=404, detail="Account not found")
-#     if not account.is_active:
-#         raise HTTPException(status_code=400, detail="Account is inactive")
-#     return account
+async def _get_account(db: AsyncSession, user_id: Optional[str] = None) -> Account:
+    # q = select(Account).where(Account.id == account_id)
+    if user_id:
+        q = select(Account).where(Account.user_id == user_id)
+    result = await db.execute(q)
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if not account.is_active:
+        raise HTTPException(status_code=400, detail="Account is inactive")
+    return account
 
 
 async def _record_transaction(

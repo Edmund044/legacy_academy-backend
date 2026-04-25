@@ -34,6 +34,8 @@ async def list_tournaments(pg: Pagination = Depends(), age_group: str | None = N
         "format": t.format.value, "status": t.status.value,
         "start_date": t.start_date.isoformat() if t.start_date else None,
         "end_date": t.end_date.isoformat() if t.end_date else None,
+        "description": t.description,
+        "created_at": t.created_at.isoformat() if t.created_at else None,
     } for t in rows], total, pg.page, pg.per_page)
 
 

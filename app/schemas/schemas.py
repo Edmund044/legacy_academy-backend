@@ -6,7 +6,7 @@ from typing import List, Optional
 from uuid import UUID
 from app.models.banking import TransactionCategory, TransactionType, LoanStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-
+from app.models.billing import SubPlan
 
 # ── Base config ────────────────────────────────────────────────────────────────
 
@@ -453,12 +453,11 @@ class OrderOut(Orm):
 
 class SubCreate(BaseModel):
     player_id: UUID
-    plan_type: str
+    plan_type: SubPlan
     annual_fee_kes: int = Field(ge=0)
     discount_pct: float = Field(ge=0, le=100, default=0)
     scholarship_applied: bool = False
     renewal_date: Optional[date] = None
-    plan_type: str
 
 
 class SubUpdate(BaseModel):

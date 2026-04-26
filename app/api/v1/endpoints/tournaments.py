@@ -3,11 +3,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.models.people import Guardian,Player
 from app.core.deps import get_db, get_current_active_user, AdminOrCoach, Pagination
 from app.core.responses import ok, paginated
 from app.models.tournament import Tournament, TournamentTeam, Match, MatchStatus
 from app.schemas.schemas import TournamentCreate, TournamentUpdate, TeamCreate, MatchCreate, MatchScoreUpdate
+from app.models.billing import  Payment, PaymentMethod, PaymentStatus, Invoice, InvoiceStatus
+from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
+from app.services import banking
+from datetime import date, datetime, timedelta, timezone
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
@@ -65,10 +69,59 @@ async def get_tournament(tournament_id: UUID, db: AsyncSession = Depends(get_db)
 
 @router.patch("/{tournament_id}", summary="Update tournament")
 async def update_tournament(tournament_id: UUID, body: TournamentUpdate,
-                            db: AsyncSession = Depends(get_db), _=Depends(AdminOrCoach)):
+                            db: AsyncSession = Depends(get_db)
+                            # , _=Depends(AdminOrCoach)
+                            ):
     t = await _get_tournament(tournament_id, db)
     for f, v in body.model_dump(exclude_none=True).items():
         setattr(t, f, v)
+
+    guardian = (await db.execute(select(Guardian).where(Guardian.user_id == body.user_id))).scalars().first()
+    try:
+        p = Payment(
+            payer_id=body.user_id,
+            amount_kes=body.amount_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Tournament subscription fee for {body.format} plan failed",
+            status=PaymentStatus.completed
+        )
+        db.add(p)
+    except Exception as e:
+        p = Payment(
+            payer_id=body.user_id,
+            amount_kes=body.amount_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Tournament subscription fee for {body.format} plan failed",
+            status=PaymentStatus.failed
+        )
+        db.add(p)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    try:
+        await banking._record_transaction(
+            db=db,
+            tx_type=TransactionType.DEBIT,
+            category=TransactionCategory.DEPOSIT,
+            amount=body.amount_kes,
+            description=f"Tournament subscription fee for {body.format} plan failed",
+            balance_before= (await banking._get_account(db, body.user_id)).balance,
+            balance_after=(await banking._get_account(db, body.user_id)).balance - body.amount_kes,
+            fee=0,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    invoice = Invoice(
+            guardian_id= guardian.id,
+            ref= f"INV--{t.id.hex[:8].upper()}",
+            period_start= date.today(),
+            period_end= date.today() + timedelta(days=365),
+            total_kes= body.amount_kes,
+            status= InvoiceStatus.draft,
+            issued_at= datetime.now(timezone.utc)
+    )
+    db.add(invoice)
+       
     await db.flush()
     return ok({"id": str(t.id), "status": t.status.value})
 

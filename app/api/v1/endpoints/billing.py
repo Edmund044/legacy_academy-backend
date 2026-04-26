@@ -104,7 +104,7 @@ async def create_sub(body: SubCreate, db: AsyncSession = Depends(get_db)):
     await db.flush()
 
     player = await db.get(Player, s.player_id)
-    guardian = await db.get(Guardian, player.guardian_id)
+    guardian = await db.get(Guardian, player.user_id)
     try:
         p = Payment(
             payer_id=guardian.user_id if guardian and guardian.user_id else None,

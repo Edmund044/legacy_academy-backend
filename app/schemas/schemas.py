@@ -287,6 +287,10 @@ class TournamentUpdate(BaseModel):
     status: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    user_id: Optional[UUID] = None
+    enrollment_total: Optional[int] = None
+    amount_kes: Optional[int] = None
+    format: Optional[str] = None
 
 
 class TournamentOut(Orm):

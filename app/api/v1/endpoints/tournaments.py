@@ -113,7 +113,7 @@ async def update_tournament(tournament_id: UUID, body: TournamentUpdate,
     
     invoice = Invoice(
             guardian_id= guardian.id,
-            ref= f"INV--{t.id.hex[:8].upper()}",
+            ref = f"INV-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{e.id.hex[:6].upper()}",
             period_start= date.today(),
             period_end= date.today() + timedelta(days=365),
             total_kes= body.amount_kes,

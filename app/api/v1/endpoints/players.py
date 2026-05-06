@@ -1,12 +1,13 @@
 """Players: CRUD + stats, physical, injuries, timeline, highlights."""
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import select, func, or_
 from app.core.deps import get_db, get_current_active_user, AdminOrCoach, Pagination
 from app.core.responses import ok, paginated
-from app.models.people import Player
+from app.models.people import Player, Guardian
 from app.models.player_dev import PlayerStat, PlayerPhysical, PlayerInjury, DevTimeline, VideoHighlight
 from app.schemas.schemas import PlayerCreate, PlayerUpdate, PlayerOut, PlayerPhysicalCreate
 from app.services.whatssap_notifications import send_whatsapp_notification
@@ -37,10 +38,8 @@ def _player_dict(p: Player) -> dict:
         "subscriptions": [{
             "id": str(s.id),
             "player_id": str(s.player_id),
-            "plan_name": s.plan_name,
-            "status": s.status.value,
-            "start_date": s.start_date.isoformat(),
-            "end_date": s.end_date.isoformat() if s.end_date else None,
+            "status": s.status,
+            "start_date": s.created_at.isoformat()
         } for s in p.subscriptions],
         "training_center": p.training_center if p.training_center else None,
         "stats": {
@@ -63,6 +62,7 @@ async def list_players(
     pg: Pagination = Depends(),
     status: str | None = None,
     group_id: UUID | None = None,
+    guardian_id: UUID | None = None,
     db: AsyncSession = Depends(get_db)
     # ,
     # _=Depends(get_current_active_user),
@@ -76,6 +76,36 @@ async def list_players(
         q = q.where(Player.status == status)
     if group_id:
         q = q.where(Player.group_id == group_id)
+    if guardian_id:
+        q = q.join(Guardian, Player.guardian_id == Guardian.id)\
+            .where(Guardian.user_id == guardian_id)
+    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
+    return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)
+
+@router.get("/search", summary="List players")
+async def list_players(
+    pg: Pagination = Depends(),
+    search: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db)
+    # ,
+    # _=Depends(get_current_active_user),
+):
+    q = select(Player).options(
+        selectinload(Player.guardians),
+        selectinload(Player.subscriptions),
+        selectinload(Player.group))
+    
+    if search:
+        search_term = f"%{search}%"
+
+        q = q.where(
+            # or_(
+            #     Player.first_name.ilike(search_term),
+            #     Player.last_name.ilike(search_term),
+                Player.guardians.user_id.ilike(search)
+            # )
+        )
     total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
     rows = (await db.execute(q.offset(pg.offset).limit(pg.per_page))).scalars().all()
     return paginated([_player_dict(p) for p in rows], total, pg.page, pg.per_page)

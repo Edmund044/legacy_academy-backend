@@ -13,7 +13,10 @@ import json
 from app.services import banking
 from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
 from typing import List
-
+from app.models.billing import  Payment, PaymentMethod, PaymentStatus, Invoice, InvoiceStatus,RevenueSplit
+from app.models.banking import TransactionCategory, TransactionType, Transaction,Account,AccountType
+from app.models.people import Guardian,Player
+from datetime import date, datetime, timedelta, timezone
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 
@@ -162,7 +165,7 @@ async def update_session(
 ):
     s = await _get(session_id, db)
     for f, v in body.model_dump(exclude_none=True).items():
-        setattr(s, f, v)
+        setattr(s, f, v)  
     await db.flush()
     return ok(_s_dict(s))
 
@@ -205,6 +208,65 @@ async def enroll_player(
         player_eligibility=body.player_eligibility,
     )
     db.add(e)
+
+    player = await db.get(Player, s.player_id)
+    guardian = await db.get(Guardian, player.user_id)
+    try:
+        p = Payment(
+            payer_id=guardian.user_id if guardian and guardian.user_id else None,
+            amount_kes=body.fee_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Subscription fee for {s.plan_type} plan",
+            status=PaymentStatus.completed
+        )
+        db.add(p)
+    except Exception as e:
+        p = Payment(
+            payer_id=guardian.user_id if guardian and guardian.user_id else None,
+            amount_kes=body.fee_kes,
+            method=PaymentMethod.mpesa,
+            description=f"Subscription fee for {s.plan_type} plan",
+            status=PaymentStatus.failed
+        )
+        db.add(p)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    try:
+        await banking._record_transaction(
+            db=db,
+            tx_type=TransactionType.DEBIT,
+            category=TransactionCategory.DEPOSIT,
+            amount=body.fee_kes,
+            description=f"Subscription fee for {s.plan_type} plan",
+            balance_before= (await banking._get_account(db, guardian.user_id)).balance,
+            balance_after=(await banking._get_account(db, guardian.user_id)).balance - body.fee_kes,
+            fee=0,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    invoice = Invoice(
+            guardian_id= player.guardian_id,
+            ref= f"INV-{s.id.hex[:8].upper()}",
+            period_start= date.today(),
+            period_end= date.today() + timedelta(days=365),
+            total_kes= body.fee_kes,
+            status= InvoiceStatus.draft,
+            issued_at= datetime.now(timezone.utc)
+    )
+    db.add(invoice)
+
+    revenue_split = RevenueSplit(
+        session_id=session_id,
+        session_rate_kes=body.fee_kes,
+        coach_pct=60.0,
+        academy_pct=40.0,
+        coach_amount_kes= round(body.fee_kes * 0.6, 2),
+        academy_amount_kes= round(body.fee_kes * 0.4, 2),
+
+    )
+    db.add(revenue_split)
+
     await db.flush()
     return ok({"enrollment_id": str(e.id), "session_id": str(session_id),
                "player_id": str(body.player_id), "status": e.status.value})

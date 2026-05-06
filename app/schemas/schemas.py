@@ -239,6 +239,7 @@ class EnrollIn(BaseModel):
     player_id: UUID
     billing_method: str
     player_eligibility: Optional[str] = None
+    fee_kes: Optional[int] = None
 
 
 class CheckInIn(BaseModel):
@@ -347,13 +348,14 @@ class EquipCreate(BaseModel):
 
 
 class EquipUpdate(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
-    category: str
+    name: Optional[str] = None
+    category: Optional[str] = None
     sku: Optional[str] = None
-    stock_total: int = Field(ge=0, default=0)
-    condition: str
+    stock_total: Optional[int] = Field(ge=0, default=0)
+    condition: Optional[str] = None
     replacement_cost_usd: Optional[float] = None
     campus_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
 
 
 class EquipOut(Orm):

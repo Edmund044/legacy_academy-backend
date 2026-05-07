@@ -1,4 +1,5 @@
 """Players: CRUD + stats, physical, injuries, timeline, highlights."""
+from pydoc import text
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -11,6 +12,7 @@ from app.models.people import Player, Guardian
 from app.models.player_dev import PlayerStat, PlayerPhysical, PlayerInjury, DevTimeline, VideoHighlight
 from app.schemas.schemas import PlayerCreate, PlayerUpdate, PlayerOut, PlayerPhysicalCreate
 from app.services.whatssap_notifications import send_whatsapp_notification
+from app.models.social import Disbursement, SponsorshipCase, CaseCost
 
 router = APIRouter(prefix="/players", tags=["Players"])
 
@@ -118,7 +120,22 @@ async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db)
     p = Player(**body.model_dump())
     db.add(p)
     await db.flush()
-    await db.refresh(p)
+    await db.refresh(p, ["subscriptions"])
+    if body.sponsored == 1:
+            # Create a sponsorship case for the player
+            case_ref = f"SC-{str(p.id)[:8].upper()}"
+            case = SponsorshipCase(player_id=p.id,
+                                   case_ref=case_ref, 
+                                   sponsor_name="LEGACY ACADEMY", 
+                                   annual_budget_kes=70000,
+                                   total_spent_kes=0,
+                                   status="active",
+                                   start_date=func.now(),
+                                   end_date=func.now()
+                                   )
+            db.add(case)
+            await db.flush()
+        
     return ok(_player_dict(p))
 
 

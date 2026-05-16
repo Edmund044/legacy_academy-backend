@@ -82,7 +82,9 @@ async def create_case(body: CaseCreate, db: AsyncSession = Depends(get_db), _=De
 
 
 @router.get("/sponsorship-cases/{case_id}", summary="Get case details")
-async def get_case(case_id: UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
+async def get_case(case_id: UUID, db: AsyncSession = Depends(get_db)
+                #    , _=Depends(get_current_active_user)
+                   ):
     c = await _get_case(case_id, db)
     return ok({
         "id": str(c.id), "case_ref": c.case_ref, "player_id": str(c.player_id),

@@ -37,6 +37,18 @@ async def dashboard(db: AsyncSession = Depends(get_db), _=Depends(get_current_ac
         },
         "recent_sessions": [],    # TODO: last 5 sessions
         "revenue_trend": [],      # TODO: 30-day rolling
+        # # Generate a 30-day rolling revenue trend
+        # revenue_trend = []
+        # for i in range(30):
+        #     date = (datetime.utcnow() - timedelta(days=i)).date()
+        #     daily_revenue = (await db.execute(
+        #         select(func.coalesce(func.sum(Payment.amount_kes), 0))
+        #         .where(Payment.status == PaymentStatus.completed)
+        #         .where(Payment.date == date)
+        #     )).scalar_one()
+        #     revenue_trend.append({"date": date.isoformat(), "revenue_kes": int(daily_revenue)})
+
+        # revenue_trend.reverse()  # To have the trend from oldest to newest
     })
 
 

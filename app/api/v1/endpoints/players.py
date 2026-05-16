@@ -37,6 +37,7 @@ def _player_dict(p: Player) -> dict:
         # ],
         "guardian": p.guardian if p.guardian else None,
         "sponsored": p.sponsored,
+        "sponsorship_case": p.sponsorship_cases if p.sponsorship_cases else None,
         "subscriptions": [{
             "id": str(s.id),
             "player_id": str(s.player_id),
@@ -73,6 +74,7 @@ async def list_players(
     q = select(Player).options(
         selectinload(Player.guardians),
         selectinload(Player.subscriptions),
+        selectinload(Player.sponsorship_cases),
         selectinload(Player.group))
     if status:
         q = q.where(Player.status == status)

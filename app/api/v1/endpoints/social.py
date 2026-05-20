@@ -105,7 +105,8 @@ async def update_case(case_id: UUID, body: CaseUpdate, db: AsyncSession = Depend
 
 
 @router.post("/sponsorship-cases/{case_id}/costs", status_code=201, summary="Log case cost")
-async def log_cost(case_id: UUID, body: CaseCostCreate, db: AsyncSession = Depends(get_db), _=Depends(CaseMgrRequired)):
+async def log_cost(case_id: UUID, body: CaseCostCreate, db: AsyncSession = Depends(get_db)
+                   ):
     c = await _get_case(case_id, db)
     cost = CaseCost(case_id=case_id, **body.model_dump())
     db.add(cost)

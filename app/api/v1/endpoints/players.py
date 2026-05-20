@@ -38,6 +38,7 @@ def _player_dict(p: Player) -> dict:
         "guardian": p.guardian if p.guardian else None,
         "sponsored": p.sponsored,
         "sponsorship_case": p.sponsorship_cases if p.sponsorship_cases else None,
+        "sponsorship_case_id": str(p.sponsorship_cases[0].id) if p.sponsorship_cases else None,
         "subscriptions": [{
             "id": str(s.id),
             "player_id": str(s.player_id),

@@ -115,6 +115,27 @@ async def log_cost(case_id: UUID, body: CaseCostCreate, db: AsyncSession = Depen
     return ok({"cost_id": str(cost.id), "amount_kes": cost.amount_kes, "remaining_kes": c.remaining_kes})
 
 
+
+@router.get("/sponsorship-cases/{case_id}/costs", status_code=200, summary="Get case cost logs")
+async def get_cost_logs(case_id: UUID, pg: Pagination = Depends(), db: AsyncSession = Depends(get_db)):
+    # Query the database for all costs associated with the case_id
+    result = await db.execute(select(CaseCost).where(CaseCost.case_id == case_id))
+    costs = result.scalars().all()
+    total = len(costs)
+
+    # Serialize the costs into a list of dictionaries
+    return paginated([
+        {
+            "cost_id": str(cost.id),
+            "amount_kes": cost.amount_kes,
+            "category": cost.category,
+            "description": cost.description,
+            "cost_date": cost.created_at,
+        }
+        for cost in costs
+    ], total, pg.page, pg.per_page)
+
+
 @router.post("/sponsorship-cases/{case_id}/receipts", status_code=201, summary="Upload receipt")
 async def upload_receipt(
     case_id: UUID,

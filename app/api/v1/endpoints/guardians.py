@@ -203,6 +203,31 @@ async def get_parent(guardian_id: UUID, db: AsyncSession = Depends(get_db)):
     })
 
 
+@router.patch("/{guardian_id}", summary="Update guardian")
+async def update_guardian(
+    guardian_id: UUID,
+    body: GuardianCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    guardian = (await db.execute(select(Guardian).where(Guardian.id == guardian_id))).scalar_one_or_none()
+    if not guardian:
+        raise HTTPException(404, {"code": "NOT_FOUND", "message": "Guardian not found"})
+    for field, val in body.model_dump(exclude_none=True).items():
+        setattr(guardian, field, val)
+    await db.flush()
+    await db.refresh(guardian)
+    return ok({
+        "id": str(guardian.id),
+        "first_name": guardian.first_name,
+        "last_name": guardian.last_name,
+        "email": guardian.email,
+        "whatsapp_phone": guardian.whatsapp_phone,
+        "relationship_type": guardian.relationship_type,
+        "is_primary": guardian.is_primary,
+        "created_at": guardian.created_at.isoformat() if guardian.created_at else None
+    }
+)
+
 # @router.patch("/{parent_id}", summary="Update parent")
 # async def update_parent(
 #     parent_id: UUID,

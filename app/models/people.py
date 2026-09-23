@@ -82,7 +82,7 @@ class Player(Base):
     assists: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     pass_accuracy: Mapped[float | None] = mapped_column(Numeric(5, 2))
     sponsored: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=False)
-    guardian: Mapped[str | None] = mapped_column(String(200))
+    #guardian: Mapped[str | None] = mapped_column(String(200))
     guardian_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("guardians.id", ondelete="SET NULL"))
     dob: Mapped[date] = mapped_column(Date, nullable=False)
     position: Mapped[str | None] = mapped_column(String(60))
@@ -90,10 +90,10 @@ class Player(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     group = relationship("AcademyGroup", back_populates="players")
-    guardians = relationship(
+    guardian = relationship(
         "Guardian",
-        foreign_keys="Guardian.player_id",
-        back_populates="player"
+        foreign_keys=[guardian_id],
+        back_populates="players"
     )
     enrollments = relationship("SessionEnrollment", back_populates="player")
     subscriptions = relationship("Subscription", back_populates="player")
@@ -117,7 +117,7 @@ class Guardian(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     whatsapp_phone: Mapped[str | None] = mapped_column(String(20))
     email: Mapped[str | None] = mapped_column(String(150))
-    player_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True),ForeignKey("players.id", ondelete="CASCADE"),nullable=True)
+    #player_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True),ForeignKey("players.id", ondelete="CASCADE"),nullable=True)
     referral_code: Mapped[str | None] = mapped_column(String(50), unique=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     relationship_type: Mapped[str] = mapped_column(String(60), nullable=True)
@@ -125,10 +125,10 @@ class Guardian(Base):
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     user = relationship("User", back_populates="guardian_profiles")
-    player = relationship(
+    players = relationship(
         "Player",
-        foreign_keys=[player_id],
-        back_populates="guardians"
+        back_populates="guardian",
+        foreign_keys="Player.guardian_id"
     )
     invoices = relationship("Invoice", back_populates="guardian")
 

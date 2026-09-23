@@ -73,7 +73,7 @@ async def list_players(
 ):
     send_whatsapp_notification("254701376319", "Hello from FastAPI 🚀")
     q = select(Player).options(
-        selectinload(Player.guardians),
+        selectinload(Player.guardian),
         selectinload(Player.subscriptions),
         selectinload(Player.sponsorship_cases),
         selectinload(Player.group))
@@ -97,7 +97,7 @@ async def list_players(
     # _=Depends(get_current_active_user),
 ):
     q = select(Player).options(
-        selectinload(Player.guardians),
+        selectinload(Player.guardian),
         selectinload(Player.subscriptions),
         selectinload(Player.group))
     
@@ -108,7 +108,7 @@ async def list_players(
             # or_(
             #     Player.first_name.ilike(search_term),
             #     Player.last_name.ilike(search_term),
-                Player.guardians.user_id.ilike(search)
+                Player.guardian.user_id.ilike(search)
             # )
         )
     total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
@@ -139,7 +139,8 @@ async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db)
             db.add(case)
             await db.flush()
         
-    return ok(_player_dict(p))
+    #return ok(_player_dict(p))
+    return ok(data={"message": "Player created successfully", "player_id": str(p.id)})
 
 
 @router.get("/{player_id}", summary="Get player profile")

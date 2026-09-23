@@ -120,7 +120,7 @@ async def create_parent(
     )
     db.add(user)
     await db.flush()
-    guardian = Guardian(**body.model_dump(), referral_code=str(uuid.uuid4())[:8])
+    guardian = Guardian(**body.model_dump(),user_id=user.id, referral_code=str(uuid.uuid4())[:8])
     db.add(guardian)
     await db.flush()
     await banking.create_account(

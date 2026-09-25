@@ -744,7 +744,7 @@ class StatementFilter(BaseModel):
 class GuardianCreate(BaseModel):
     first_name: str
     last_name: str
-    user_id: Optional[UUID] = None
+    #user_id: Optional[UUID] = None
     #player_id: Optional[UUID] = None
     relationship_type: str = None
     whatsapp_phone: Optional[str] = None

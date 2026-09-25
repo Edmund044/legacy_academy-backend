@@ -47,7 +47,7 @@ class Session(Base):
     revenue_kes: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     equipment_needed: Mapped[str | None] = mapped_column(Text)
     drills: Mapped[str | None] = mapped_column(Text)
-    status: Mapped[SessionStatus] = mapped_column(Enum(SessionStatus), nullable=False, default=SessionStatus.planned, index=True)
+    status: Mapped[SessionStatus] = mapped_column(Enum(SessionStatus,name="session_status"), nullable=False, default=SessionStatus.planned, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 

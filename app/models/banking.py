@@ -52,7 +52,7 @@ class Account(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     account_number: Mapped[int] = mapped_column(String, unique=True, nullable=False, index=True)
-    account_type: Mapped[str] = mapped_column(Enum(AccountType), nullable=False)
+    account_type: Mapped[str] = mapped_column(Enum(AccountType,name="account_type"), nullable=False)
     balance: Mapped[int] = mapped_column(Float, default=0.0, nullable=False)
     currency: Mapped[str] = mapped_column(String, default="KES")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -70,8 +70,8 @@ class Transaction(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=gen_uuid)
     reference: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
-    transaction_type: Mapped[str] = mapped_column(Enum(TransactionType), nullable=False)
-    category: Mapped[str] = mapped_column(Enum(TransactionCategory), nullable=False)
+    transaction_type: Mapped[str] = mapped_column(Enum(TransactionType,name="transaction_type"), nullable=False)
+    category: Mapped[str] = mapped_column(Enum(TransactionCategory,name="transaction_category"), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     fee: Mapped[float] = mapped_column(Float, default=0.0)
     balance_before: Mapped[float] = mapped_column(Float, nullable=False)
@@ -98,7 +98,7 @@ class Loan(Base):
     total_repayable: Mapped[float] = mapped_column(Float, nullable=False)
     amount_repaid: Mapped[float] = mapped_column(Float, default=0.0)
     outstanding_balance: Mapped[float] = mapped_column(Float, nullable=False)
-    status: Mapped[str] = mapped_column(Enum(LoanStatus), default=LoanStatus.PENDING)
+    status: Mapped[str] = mapped_column(Enum(LoanStatus,name='loan_status'), default=LoanStatus.PENDING)
     purpose: Mapped[float] = mapped_column(String, nullable=True)
     disbursed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -135,7 +135,7 @@ async def create_parent(
         "last_name": guardian.last_name,
         "email": guardian.email,
         "whatsapp_phone": guardian.whatsapp_phone,
-        "player_id": str(guardian.player_id),
+        # "player_id": str(guardian.player_id),
         "relationship_type": guardian.relationship_type,
         "is_primary": guardian.is_primary,
         "created_at": guardian.created_at.isoformat() if guardian.created_at else None})

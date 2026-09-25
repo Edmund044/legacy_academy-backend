@@ -128,7 +128,7 @@ async def create_player(body: PlayerCreate, db: AsyncSession = Depends(get_db)
             # Create a sponsorship case for the player
             case_ref = f"SC-{str(p.id)[:8].upper()}"
             case = SponsorshipCase(player_id=p.id,
-                                   case_ref=case_ref, 
+                                   case_ref=case_ref,
                                    sponsor_name="LEGACY ACADEMY", 
                                    annual_budget_kes=70000,
                                    total_spent_kes=0,

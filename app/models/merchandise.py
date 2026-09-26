@@ -31,7 +31,7 @@ class Order(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     total_kes: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
-    status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus,name='order_status'), nullable=False, default=OrderStatus.pending, index=True)
+    status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus,name='orderstatus'), nullable=False, default=OrderStatus.pending, index=True)
     placed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     customer = relationship("User", back_populates="orders")

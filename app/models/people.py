@@ -86,7 +86,7 @@ class Player(Base):
     guardian_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("guardians.id", ondelete="SET NULL"))
     dob: Mapped[date] = mapped_column(Date, nullable=False)
     position: Mapped[str | None] = mapped_column(String(60))
-    status: Mapped[PlayerStatus] = mapped_column(Enum(PlayerStatus,name="playerstatus"), nullable=False, default=PlayerStatus.active, index=True)
+    status: Mapped[PlayerStatus] = mapped_column(Enum(PlayerStatus,name="player_status"), nullable=False, default=PlayerStatus.active, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     group = relationship("AcademyGroup", back_populates="players")

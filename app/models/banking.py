@@ -52,7 +52,7 @@ class Account(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     account_number: Mapped[int] = mapped_column(String, unique=True, nullable=False, index=True)
-    account_type: Mapped[str] = mapped_column(Enum(AccountType,name="account_type"), nullable=False)
+    account_type: Mapped[str] = mapped_column(Enum(AccountType,name="accounttype"), nullable=False)
     balance: Mapped[int] = mapped_column(Float, default=0.0, nullable=False)
     currency: Mapped[str] = mapped_column(String, default="KES")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
